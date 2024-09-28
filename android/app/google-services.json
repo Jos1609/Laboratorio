@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "756694473927",
+    "firebase_url": "https://laboratorio-ffe5a-default-rtdb.firebaseio.com",
+    "project_id": "laboratorio-ffe5a",
+    "storage_bucket": "laboratorio-ffe5a.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:756694473927:android:1e7a35202e4add5ad1f2e2",
+        "android_client_info": {
+          "package_name": "com.lab.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCFpp2sY75FcTqX0GU0nzME58usUNald34"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

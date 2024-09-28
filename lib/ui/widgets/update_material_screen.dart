@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:laboratorio/data/repositories/material_repository.dart';
+import 'package:laboratorio/ui/widgets/custom_snackbar.dart';
 
 class UpdateMaterialCard extends StatelessWidget {
   final Map<String, dynamic> material; // Define el mapa como String y dinámico
@@ -53,35 +54,41 @@ class UpdateMaterialCard extends StatelessWidget {
                   };
 
                   // Validación de campos no vacíos
-                  if (updatedData['name'].isNotEmpty && updatedData['unit'].isNotEmpty) {
+                  if (updatedData['name'].isNotEmpty &&
+                      updatedData['unit'].isNotEmpty) {
                     if (material['id'] != null) {
                       try {
-                        print('Actualizando material con ID: ${material['id']}');
-                        await MaterialRepository().updateMaterial(material['id'], updatedData);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Material actualizado correctamente.')),
-                        );
+                        print(
+                            'Actualizando material con ID: ${material['id']}');
+                        await MaterialRepository()
+                            .updateMaterial(material['id'], updatedData);
+                        CustomSnackbar.show(
+                            context,
+                            'Material actualizado correctamente.',
+                            Colors.green,
+                            Icons.check_circle);
                         Navigator.pop(context);
                       } catch (e) {
-                        print('Error al actualizar el material: $e');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Error al actualizar el material.')),
-                        );
+                        CustomSnackbar.show(
+                            context,
+                            'Error al actualizar el material: $e',
+                            Colors.red,
+                            Icons.error);
                       }
                     } else {
                       print('El ID del material es nulo.');
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                            content: Text('Error: el ID del material es nulo.')),
+                            content:
+                                Text('Error: el ID del material es nulo.')),
                       );
                     }
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Por favor completa todos los campos.')),
-                    );
+                    CustomSnackbar.show(
+                        context,
+                        'Completa todos los campos',
+                        Colors.red,
+                        Icons.error);
                   }
                 },
                 child: const Text('Guardar cambios'),

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/data/repositories/material_repository.dart';
+import 'package:laboratorio/ui/widgets/custom_snackbar.dart';
 import 'package:laboratorio/ui/widgets/update_material_screen.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:file_picker/file_picker.dart';
@@ -84,7 +85,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     );
 
     if (result != null && result.files.isNotEmpty) {
-      var bytes;
+      Uint8List? bytes;
 
       // Verificar si estamos en la web
       if (kIsWeb) {
@@ -110,35 +111,20 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
             // Validar que los datos no sean nulos o vacíos
             if (materialName.isNotEmpty && stock != null && unit.isNotEmpty) {
               try {
-                print(
-                    'Subiendo material: $materialName, stock: $stock, unit: $unit');
                 await _materialRepo.addMaterial(materialName, stock, unit);
                 print('Material "$materialName" subido correctamente.');
               } catch (e) {
-                print('Error al subir el material "$materialName": $e');
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al subir el material: $materialName'),
-                  ),
-                );
+                CustomSnackbar.show(context, 'Error al agregar el material: $e', Colors.red, Icons.error);
               }
             } else {
-              print('Datos inválidos en la fila: $row');
             }
           }
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('¡Datos subidos exitosamente!'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        CustomSnackbar.show(context, 'Material agregado correctamente.', Colors.green, Icons.check_circle);
       } else {
-        print("No se pudo leer el contenido del archivo.");
       }
     } else {
-      print("No se seleccionó ningún archivo.");
     }
   }
 
@@ -163,7 +149,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 Expanded(
                   child: TextField(
                     onChanged: _onSearchChanged,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Buscar material',
                       prefixIcon: Icon(Icons.search),
                     ),
@@ -180,8 +166,8 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
             const SizedBox(height: 20),
             Container(
               color: Colors.grey[300],
-              child: Row(
-                children: const [
+              child: const Row(
+                children: [
                   Expanded(child: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
                   Expanded(child: Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
                   Expanded(child: Text('Unidad de medida', style: TextStyle(fontWeight: FontWeight.bold))),

@@ -18,7 +18,7 @@ class MaterialRepository {
       print('Material agregado correctamente: $name');
     } catch (e) {
       print('Error al agregar material: $e');
-      throw e; // Vuelve a lanzar el error para que se capture en el llamador
+      rethrow; // Vuelve a lanzar el error para que se capture en el llamador
     }
   }
 
@@ -28,7 +28,7 @@ class MaterialRepository {
       print('Material actualizado correctamente: $id');
     } catch (e) {
       print('Error al actualizar el material: $e');
-      throw e; // Lanza el error para manejarlo en el UI
+      rethrow; // Lanza el error para manejarlo en el UI
     }
   }
 

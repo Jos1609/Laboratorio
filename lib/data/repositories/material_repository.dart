@@ -4,6 +4,8 @@ import 'package:firebase_database/firebase_database.dart';
 class MaterialRepository {
   final DatabaseReference _ref =
       FirebaseDatabase.instance.ref().child('materiales');
+  final DatabaseReference _materialRef = FirebaseDatabase.instance.ref().child('materiales');
+
 
   Future<void> addMaterial(String name, int stock, String unit) async {
     // Usar push() aquí para agregar un nuevo material
@@ -20,8 +22,14 @@ class MaterialRepository {
     }
   }
 
-  Future<void> updateMaterial(String id, Map<String, dynamic> newData) async {
-    await _ref.child(id).update(newData);
+  Future<void> updateMaterial(String id, Map<String, dynamic> updatedData) async {
+    try {
+      await _materialRef.child(id).update(updatedData);
+      print('Material actualizado correctamente: $id');
+    } catch (e) {
+      print('Error al actualizar el material: $e');
+      throw e; // Lanza el error para manejarlo en el UI
+    }
   }
 
   Future<void> deleteMaterial(String id) async {

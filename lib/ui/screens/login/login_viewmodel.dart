@@ -38,7 +38,7 @@ class LoginViewModel extends ChangeNotifier {
         // Manejar el inicio de sesión exitoso (navegación o mensaje)
         Navigator.pushReplacementNamed(
           context, 
-          '/home-docente'
+          '/home-admin'
           );
       }
     } on CustomException catch (e) {

@@ -8,4 +8,5 @@ class AppColors {
   static const textColor = Color(0xFF000000);
   static const redColor = Color.fromARGB(255, 245, 3, 3);
   static const Color primary = Color.fromARGB(255, 96, 208, 142);
+   static const mainColor = Color.fromARGB(255, 240, 228, 228);
 }

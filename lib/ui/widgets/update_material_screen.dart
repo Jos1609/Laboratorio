@@ -1,108 +1,51 @@
+// Ubicación del archivo: lib/ui/widgets/update_material_screen.dart
 import 'package:flutter/material.dart';
+import 'package:laboratorio/data/repositories/material_repository.dart';
 
 class UpdateMaterialScreen extends StatelessWidget {
-  final TextEditingController nameController = TextEditingController(text: 'Tubos de ensayo');
-  final TextEditingController stockController = TextEditingController(text: '20');
-  final TextEditingController unitController = TextEditingController(text: 'ML');
+  final Map material;
 
-  UpdateMaterialScreen({super.key});
+  const UpdateMaterialScreen({super.key, required this.material});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Text(
-              'Actualizar Material',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
-            // Nombre del material
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('Nombre del Material'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: nameController,
-              enabled: true, 
-              decoration: InputDecoration(
-                border: const OutlineInputBorder(),
-                filled: true,
-                fillColor: Colors.grey[300], // Color de fondo gris
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Campos de stock y unidad de medida en una fila
-            Row(
-              children: [
-                // Stock
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Stock'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: stockController,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 20),
-                // Unidad de medida
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Unidad de medida'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: unitController,
-                        enabled: true, 
-                        decoration: InputDecoration(
-                          border: const OutlineInputBorder(),
-                          filled: true,
-                          fillColor: Colors.grey[300], // Color de fondo gris
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 40),
-            // Botón Guardar
-            ElevatedButton(
-              onPressed: () {
-                // Acción para guardar cambios
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15), backgroundColor: Colors.blue,
-              ),
-              child: const Text(
-                'Guardar',
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-          ],
-        ),
+    final TextEditingController nameController = TextEditingController(text: material['name']);
+    final TextEditingController stockController = TextEditingController(text: material['stock'].toString());
+    final TextEditingController unitController = TextEditingController(text: material['unit']);
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: nameController,
+            decoration: const InputDecoration(labelText: 'Nombre del material'),
+          ),
+          TextField(
+            controller: stockController,
+            decoration: const InputDecoration(labelText: 'Stock'),
+            keyboardType: TextInputType.number,
+          ),
+          TextField(
+            controller: unitController,
+            decoration: const InputDecoration(labelText: 'Unidad de medida'),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              final updatedData = {
+                'name': nameController.text,
+                'stock': int.parse(stockController.text),
+                'unit': unitController.text,
+              };
+              MaterialRepository().updateMaterial(material['id'], updatedData);
+              Navigator.pop(context);
+            },
+            child: const Text('Guardar cambios'),
+          ),
+        ],
       ),
     );
   }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: UpdateMaterialScreen(),
-  ));
 }

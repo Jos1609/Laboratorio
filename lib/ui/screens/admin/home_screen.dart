@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/data/repositories/material_repository.dart';
+import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
 import 'package:laboratorio/ui/widgets/custom_snackbar.dart';
 import 'package:laboratorio/ui/widgets/update_material_screen.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -11,6 +12,8 @@ import 'dart:io';
 import 'package:excel/excel.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:html' as html;
+
+import 'package:provider/provider.dart';
 
 class HomeAdminScreen extends StatefulWidget {
   const HomeAdminScreen({super.key});
@@ -225,8 +228,19 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Admin Panel'),
+        title: const Text('admin'),
         backgroundColor: AppColors.mainColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // Llamar al método signOut del LoginViewModel
+              final loginViewModel =
+                  Provider.of<LoginViewModel>(context, listen: false);
+              loginViewModel.signOut(context);
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),

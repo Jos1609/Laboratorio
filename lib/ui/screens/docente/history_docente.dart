@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
+import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/data/models/muestra.dart';
+import 'package:laboratorio/services/auth_service.dart';
 import 'package:laboratorio/services/muestra_service.dart';
+import 'package:laboratorio/ui/screens/login/login_screen.dart';
+import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
+import 'package:provider/provider.dart';
 
 class HistoryDocente extends StatefulWidget {
   const HistoryDocente({super.key});
@@ -14,12 +19,24 @@ class HistoryDocente extends StatefulWidget {
 
 class _HistoryDocenteState extends State<HistoryDocente> {
   final MuestraService _muestraService = MuestraService();
-  String _filter = 'dejado';  // Por defecto, mostramos las pendientes (dejado)
+  String _filter = 'dejado'; 
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
     super.initState();
     _testFirebaseConnection();
+    _checkAuth();
+  }
+  Future<void> _checkAuth() async {
+    bool isAuthenticated = await _authService.isUserAuthenticated();
+    if (!isAuthenticated) {
+      // Si no está autenticado, redirige a la pantalla de inicio de sesión
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    }
   }
 
   Future<void> _testFirebaseConnection() async {
@@ -69,7 +86,19 @@ class _HistoryDocenteState extends State<HistoryDocente> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historial de Muestras'),
+        title: const Text('Historial de muestras'),
+        backgroundColor: AppColors.mainColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // Llamar al método signOut del LoginViewModel
+              final loginViewModel =
+                  Provider.of<LoginViewModel>(context, listen: false);
+              loginViewModel.signOut(context);
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

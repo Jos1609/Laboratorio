@@ -4,9 +4,11 @@ import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/data/models/muestra_model.dart';
 import 'package:laboratorio/data/models/material.dart';
 import 'package:laboratorio/data/repositories/solicitud_repository.dart';
+import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
 import 'package:laboratorio/ui/widgets/auto_dismiss_alert.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
 import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
+import 'package:provider/provider.dart';
 class MuestrasDocente extends StatefulWidget {
   const MuestrasDocente({super.key});
 
@@ -101,11 +103,28 @@ class _PracticeFormState extends State<MuestrasDocente> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    
+  }
+  
   //seccion de curso, practica, alumnos, turno
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Registro de Materiales Dejados'),
+        title: const Text('Registro Materiales dejados'),
+        backgroundColor: AppColors.mainColor,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // Llamar al método signOut del LoginViewModel
+              final loginViewModel =
+                  Provider.of<LoginViewModel>(context, listen: false);
+              loginViewModel.signOut(context);
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),

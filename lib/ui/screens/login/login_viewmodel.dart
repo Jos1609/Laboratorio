@@ -1,8 +1,9 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import '../../../data/repositories/auth_repository.dart';
 import '../../../core/utils/custom_exceptions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../../core/utils/validators.dart'; 
+import '../../../core/utils/validators.dart';
 import '../../../ui/widgets/auto_dismiss_alert.dart';
 
 class LoginViewModel extends ChangeNotifier {
@@ -17,8 +18,10 @@ class LoginViewModel extends ChangeNotifier {
   }
 
   bool get isLoading => _isLoading;
+  
 
-  Future<void> signIn(String email, String password, BuildContext context) async {
+  Future<void> signIn(
+      String email, String password, BuildContext context) async {
     // Validaciones antes de intentar iniciar sesión
     final emailError = Validators.validateEmail(email);
     final passwordError = Validators.validatePassword(password);
@@ -35,11 +38,23 @@ class LoginViewModel extends ChangeNotifier {
     try {
       User? user = await _authRepository.signIn(email, password);
       if (user != null) {
-        // Manejar el inicio de sesión exitoso (navegación o mensaje)
-        Navigator.pushReplacementNamed(
-          context, 
-          '/home-docente'
-          );
+        // Verifica el tipo de usuario en Firebase Realtime Database
+        DatabaseReference dbRef = FirebaseDatabase.instance.ref();
+        DataSnapshot adminSnapshot =
+            await dbRef.child('admin').child(user.uid).get();
+        DataSnapshot docenteSnapshot =
+            await dbRef.child('docente').child(user.uid).get();
+
+        if (adminSnapshot.exists) {
+          // Si el usuario está en el nodo 'admin'
+          Navigator.pushReplacementNamed(context, '/home-admin');
+        } else if (docenteSnapshot.exists) {
+          // Si el usuario está en el nodo 'docente'
+          Navigator.pushReplacementNamed(context, '/home-docente');
+        } else {
+          // Manejo si no se encuentra el usuario en ninguno de los nodos
+          Navigator.pushReplacementNamed(context, '/super');
+        }
       }
     } on CustomException catch (e) {
       // Manejar errores específicos de autenticación

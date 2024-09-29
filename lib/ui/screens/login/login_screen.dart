@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:laboratorio/ui/widgets/recover_password_dialog.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,7 @@ import '../../../core/utils/validators.dart';
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -22,7 +25,42 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
+void _checkUser() async {
+  User? currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser != null) {
+    // Aquí verifica en Realtime Database para determinar si el usuario es admin o docente
+    DatabaseEvent event = await FirebaseDatabase.instance
+        .ref('admin/${currentUser.uid}')
+        .once();
+
+    if (event.snapshot.exists) {
+      // El usuario es admin
+      Navigator.pushReplacementNamed(context, '/home-admin');
+    } else {
+      // Verifica si es docente
+      DatabaseEvent eventDocente = await FirebaseDatabase.instance
+          .ref('docente/${currentUser.uid}')
+          .once();
+
+      if (eventDocente.snapshot.exists) {
+        // El usuario es docente
+        Navigator.pushReplacementNamed(context, '/home-docente');
+      } else {
+        // Usuario no encontrado en ninguno de los nodos
+        await FirebaseAuth.instance.signOut();
+        Navigator.pushReplacementNamed(context, '/'); // Redirige al login
+      }
+    }
+  }
+}
+
+
   @override
+
+  void initState() {
+  super.initState();
+  _checkUser(); // Verifica el estado del usuario al iniciar la pantalla
+}
   Widget build(BuildContext context) {
     final viewModel = Provider.of<LoginViewModel>(context);
 

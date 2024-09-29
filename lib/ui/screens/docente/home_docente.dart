@@ -1,4 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/core/utils/validators.dart';
@@ -12,9 +13,7 @@ import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
 import 'package:provider/provider.dart';
 
 class HomeDocente extends StatefulWidget {
-  
   const HomeDocente({super.key});
-  
 
   @override
   _PracticeFormState createState() => _PracticeFormState();
@@ -32,6 +31,7 @@ class _PracticeFormState extends State<HomeDocente> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedStartTime;
   TimeOfDay? _selectedEndTime;
+  Map<String, String> _materialsMap = {};
 
   void _addMaterial() {
     setState(() {
@@ -54,10 +54,11 @@ class _PracticeFormState extends State<HomeDocente> {
     });
   }
 
-  void _updateMaterial(int index, String name, String quantity, String unit) {
+  void _updateMaterial(int index, String id, String quantity, String unit) {
     setState(() {
+      // Aquí asignas el nombre usando el mapa de materiales.
       _materials[index] = LabMaterial(
-        name: name,
+        name: _materialsMap[id]!, // Muestra el nombre correspondiente al ID.
         quantity: quantity,
         unit: unit,
       );
@@ -92,7 +93,8 @@ class _PracticeFormState extends State<HomeDocente> {
         try {
           await _solicitudRepository.createSolicitud(solicitud);
           // Mostrar mensaje de éxito
-          showAutoDismissAlert(context, 'Se envió correctamente la solicitud', const Color.fromARGB(255, 41, 10, 112));
+          showAutoDismissAlert(context, 'Se envió correctamente la solicitud',
+              const Color.fromARGB(255, 41, 10, 112));
           // Vaciar campos
           setState(() {
             _titleController.clear();
@@ -105,9 +107,9 @@ class _PracticeFormState extends State<HomeDocente> {
             _materials.clear();
             _isConfirmed = false;
           });
-          
         } catch (e) {
-          showAutoDismissAlert(context, 'No se pudo enviar la solicitud', const Color.fromARGB(255, 227, 6, 6));          
+          showAutoDismissAlert(context, 'No se pudo enviar la solicitud',
+              const Color.fromARGB(255, 227, 6, 6));
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -115,16 +117,34 @@ class _PracticeFormState extends State<HomeDocente> {
         );
       }
     } else {
-      showAutoDismissAlert(context, 'Complete todos los datos', const Color.fromARGB(255, 227, 6, 6));          
-        
+      showAutoDismissAlert(context, 'Complete todos los datos',
+          const Color.fromARGB(255, 227, 6, 6));
     }
   }
 
   @override
   void initState() {
     super.initState();
-   
+    _loadMaterialsFromFirebase();
   }
+
+  Future<void> _loadMaterialsFromFirebase() async {
+    final DatabaseReference materialsRef =
+        FirebaseDatabase.instance.ref().child('materiales');
+    final DataSnapshot snapshot = await materialsRef.get();
+
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> materialsMap =
+          snapshot.value as Map<dynamic, dynamic>;
+      setState(() {
+        _materialsMap = materialsMap.map((key, value) {
+          // Suponiendo que el nombre del material está en el campo 'name'
+          return MapEntry(key as String, value['name'] as String);
+        });
+      });
+    }
+  }
+
   //seccion de curso, practica, alumnos, turno
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,7 +235,8 @@ class _PracticeFormState extends State<HomeDocente> {
           ],
         ),
       ),
-      bottomNavigationBar: const CustomNavigationBar(),  //llamamos a la barra de navegacion
+      bottomNavigationBar:
+          const CustomNavigationBar(), //llamamos a la barra de navegacion
     );
   }
 
@@ -259,8 +280,7 @@ class _PracticeFormState extends State<HomeDocente> {
               onPressed: () async {
                 TimeOfDay? pickedTime = await showTimePicker(
                   context: context,
-                  initialTime: const TimeOfDay( hour: 07, minute:00),
-                                   
+                  initialTime: const TimeOfDay(hour: 07, minute: 00),
                 );
                 if (pickedTime != null) {
                   setState(() {
@@ -285,8 +305,7 @@ class _PracticeFormState extends State<HomeDocente> {
               onPressed: () async {
                 TimeOfDay? pickedTime = await showTimePicker(
                   context: context,
-                  initialTime: const TimeOfDay( hour: 22, minute:20),
-
+                  initialTime: const TimeOfDay(hour: 22, minute: 20),
                 );
                 if (pickedTime != null) {
                   setState(() {
@@ -355,25 +374,45 @@ class _PracticeFormState extends State<HomeDocente> {
               ],
               rows: _materials.asMap().entries.map((entry) {
                 int index = entry.key;
-                LabMaterial material = entry
-                    .value; // Usa LabMaterial en lugar de Map<String, String>
+                LabMaterial material = entry.value;
                 return DataRow(
                   cells: [
                     DataCell(
-                      SizedBox(
-                        width: 80,
-                        child: TextFormField(
-                          initialValue: material.name,
-                          onChanged: (value) {
-                            _updateMaterial(
-                                index, value, material.quantity, material.unit);
-                          },
-                          decoration: const InputDecoration(),
-                          maxLines: 1,
-                          style: const TextStyle(fontSize: 14),
-                          textAlignVertical: TextAlignVertical.center,
-                          textAlign: TextAlign.start,
-                        ),
+                      Autocomplete<String>(
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          if (textEditingValue.text.isEmpty) {
+                            return const Iterable<String>.empty();
+                          }
+                          return _materialsMap.values.where((String option) {
+                            return option
+                                .toLowerCase()
+                                .contains(textEditingValue.text.toLowerCase());
+                          });
+                        },
+                        displayStringForOption: (String option) =>
+                            option, // Mostramos el nombre del material
+                        fieldViewBuilder: (BuildContext context,
+                            TextEditingController textEditingController,
+                            FocusNode focusNode,
+                            VoidCallback onFieldSubmitted) {
+                          return TextFormField(
+                            controller: textEditingController,
+                            focusNode: focusNode,
+                            decoration: const InputDecoration(
+                              hintText: 'Buscar Material',
+                            ),
+                            onFieldSubmitted: (String value) {
+                              onFieldSubmitted();
+                            },
+                          );
+                        },
+                        onSelected: (String selectedMaterial) {
+                          // Aquí actualizamos el material seleccionado basado en el nombre.
+                          String selectedId = _materialsMap.keys.firstWhere(
+                              (key) => _materialsMap[key] == selectedMaterial);
+                          _updateMaterial(index, selectedId, material.quantity,
+                              material.unit);
+                        },
                       ),
                     ),
                     DataCell(

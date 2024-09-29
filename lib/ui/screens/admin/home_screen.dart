@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:laboratorio/core/constants/app_colors.dart';
@@ -8,6 +9,8 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'package:excel/excel.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:html' as html;
 
 class HomeAdminScreen extends StatefulWidget {
   const HomeAdminScreen({super.key});
@@ -114,22 +117,108 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                 await _materialRepo.addMaterial(materialName, stock, unit);
                 print('Material "$materialName" subido correctamente.');
               } catch (e) {
-                CustomSnackbar.show(context, 'Error al agregar el material: $e', Colors.red, Icons.error);
+                CustomSnackbar.show(context, 'Error al agregar el material: $e',
+                    Colors.red, Icons.error);
               }
-            } else {
-            }
+            } else {}
           }
         }
 
-        CustomSnackbar.show(context, 'Material agregado correctamente.', Colors.green, Icons.check_circle);
-      } else {
-      }
-    } else {
-    }
+        CustomSnackbar.show(context, 'Material agregado correctamente.',
+            Colors.green, Icons.check_circle);
+      } else {}
+    } else {}
   }
 
   Future<void> _exportMaterials() async {
-    // Implementar la lógica de exportación aquí
+    // Crear un nuevo archivo Excel
+    var excel = Excel.createExcel();
+
+    // Obtener una hoja
+    Sheet sheetObject = excel['Materiales'];
+
+    // Definir estilo de celdas
+    CellStyle cellStyle = CellStyle(
+      fontFamily: getFontFamily(FontFamily.Calibri),
+      fontSize: 14,
+      bold: true,
+      underline: Underline.Single,
+      horizontalAlign: HorizontalAlign.Center,
+      verticalAlign: VerticalAlign.Center,
+    );
+
+    // Escribir encabezados en la primera fila
+    var headers = ['Indice', 'Material', 'Stock', 'UM'];
+    for (int i = 0; i < headers.length; i++) {
+      var cell = sheetObject
+          .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+      cell.value = TextCellValue(headers[i]); // Asignar el valor del encabezado
+      cell.cellStyle = cellStyle; // Aplicar estilo
+    }
+
+    // Obtener datos desde Firebase Realtime Database
+    DatabaseReference materialsRef =
+        FirebaseDatabase.instance.ref().child('materiales');
+
+    // Esperar a que se obtengan los datos
+    DataSnapshot snapshot = await materialsRef.get();
+
+    if (snapshot.exists) {
+      Map<dynamic, dynamic> materialsMap =
+          snapshot.value as Map<dynamic, dynamic>;
+
+      int rowIndex = 1; // Comenzar desde la segunda fila
+      int indicator = 1; // Contador para el indicador numérico
+      materialsMap.forEach((key, value) {
+        var material = value as Map<dynamic, dynamic>;
+
+        // Escribir los valores en las celdas
+        sheetObject
+            .cell(
+                CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
+            .value = IntCellValue(indicator); // Indicador numérico
+        sheetObject
+            .cell(
+                CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
+            .value = TextCellValue(material['name']); // Nombre
+        sheetObject
+            .cell(
+                CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex))
+            .value = IntCellValue(material['stock']); // Stock
+        sheetObject
+            .cell(
+                CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex))
+            .value = TextCellValue(material['unit']); // Unidad
+
+        rowIndex++;
+        indicator++; // Incrementar el indicador
+      });
+    } else {
+      print('No se encontraron materiales en Firebase.');
+    }
+
+    // Guardar el archivo
+    if (kIsWeb) {
+      final bytes = excel.encode();
+      if (bytes != null) {
+        final content = base64Encode(bytes);
+        html.AnchorElement(
+            href: "data:application/octet-stream;base64,$content")
+          ..setAttribute("download", "materiales.xlsx")
+          ..click();
+      }
+    } else {
+      try {
+        final directory = await getApplicationDocumentsDirectory();
+        final filePath = '${directory.path}/materiales.xlsx';
+        final file = File(filePath);
+
+        await file.writeAsBytes(excel.encode()!, flush: true);
+        print('Archivo guardado en: $filePath');
+      } catch (e) {
+        print('Error al guardar el archivo: $e');
+      }
+    }
   }
 
   @override
@@ -168,10 +257,18 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
               color: Colors.grey[300],
               child: const Row(
                 children: [
-                  Expanded(child: Text('Material', style: TextStyle(fontWeight: FontWeight.bold))),
-                  Expanded(child: Text('Stock', style: TextStyle(fontWeight: FontWeight.bold))),
-                  Expanded(child: Text('Unidad de medida', style: TextStyle(fontWeight: FontWeight.bold))),
-                  Expanded(child: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: Text('Material',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: Text('Stock',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: Text('Unidad de medida',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  Expanded(
+                      child: Text('Acciones',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
               ),
             ),
@@ -196,7 +293,8 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                                   return Dialog(
                                     child: UpdateMaterialCard(
                                       material: {
-                                        'id': material['id'], // Asegúrate de que el ID esté aquí
+                                        'id': material[
+                                            'id'], // Asegúrate de que el ID esté aquí
                                         'name': material['name'],
                                         'stock': material['stock'],
                                         'unit': material['unit'],

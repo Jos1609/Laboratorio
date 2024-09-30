@@ -31,7 +31,7 @@ class _PracticeFormState extends State<HomeDocente> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedStartTime;
   TimeOfDay? _selectedEndTime;
-  Map<String, String> _materialsMap = {};
+  Map<String, dynamic> _materialsData = {};
 
   void _addMaterial() {
     setState(() {
@@ -56,9 +56,8 @@ class _PracticeFormState extends State<HomeDocente> {
 
   void _updateMaterial(int index, String id, String quantity, String unit) {
     setState(() {
-      // Aquí asignas el nombre usando el mapa de materiales.
       _materials[index] = LabMaterial(
-        name: _materialsMap[id]!, // Muestra el nombre correspondiente al ID.
+        name: _materialsData[id]?['name'] ?? '',
         quantity: quantity,
         unit: unit,
       );
@@ -137,9 +136,12 @@ class _PracticeFormState extends State<HomeDocente> {
       Map<dynamic, dynamic> materialsMap =
           snapshot.value as Map<dynamic, dynamic>;
       setState(() {
-        _materialsMap = materialsMap.map((key, value) {
-          // Suponiendo que el nombre del material está en el campo 'name'
-          return MapEntry(key as String, value['name'] as String);
+        _materialsData = materialsMap.map((key, value) {
+          return MapEntry(key as String, {
+            'name': value['name'] as String? ?? '',
+            'quantity': value['stock'] as int? ?? 0,
+            'unit': value['unit'] as String? ?? '',
+          });
         });
       });
     }
@@ -336,41 +338,12 @@ class _PracticeFormState extends State<HomeDocente> {
               columnSpacing: 10,
               columns: const [
                 DataColumn(
-                  label: Expanded(
-                    child: Text(
-                      'Material',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ),
+                    label: Text('Material', style: TextStyle(fontSize: 12))),
                 DataColumn(
-                  label: Expanded(
-                    child: Text(
-                      'Cant.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ),
+                    label: Text('Cant.', style: TextStyle(fontSize: 12))),
+                DataColumn(label: Text('UM', style: TextStyle(fontSize: 12))),
                 DataColumn(
-                  label: Expanded(
-                    child: Text(
-                      'UM',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ),
-                DataColumn(
-                  label: Expanded(
-                    child: Text(
-                      'Acción',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ),
+                    label: Text('Acción', style: TextStyle(fontSize: 12))),
               ],
               rows: _materials.asMap().entries.map((entry) {
                 int index = entry.key;
@@ -383,49 +356,109 @@ class _PracticeFormState extends State<HomeDocente> {
                           if (textEditingValue.text.isEmpty) {
                             return const Iterable<String>.empty();
                           }
-                          return _materialsMap.values.where((String option) {
-                            return option
+                          return _materialsData.values.where((dynamic option) {
+                            return option['name']
                                 .toLowerCase()
                                 .contains(textEditingValue.text.toLowerCase());
-                          });
+                          }).map((dynamic option) => option['name'] as String);
                         },
-                        displayStringForOption: (String option) =>
-                            option, // Mostramos el nombre del material
-                        fieldViewBuilder: (BuildContext context,
-                            TextEditingController textEditingController,
-                            FocusNode focusNode,
-                            VoidCallback onFieldSubmitted) {
+                        onSelected: (String selectedMaterial) {
+                          String selectedId = _materialsData.keys.firstWhere(
+                            (key) =>
+                                _materialsData[key]?['name'] ==
+                                selectedMaterial,
+                            orElse: () => '',
+                          );
+                          int availableQuantity =
+                              _materialsData[selectedId]?['quantity'] as int? ??
+                                  0;
+                          String selectedUnit =
+                              _materialsData[selectedId]?['unit'] as String? ??
+                                  'Unidad';
+
+                          if (availableQuantity == 0) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content:
+                                      Text('Este material está sin stock.')),
+                            );
+                          }
+
+                          _updateMaterial(index, selectedId,
+                              availableQuantity.toString(), selectedUnit);
+                        },
+                        fieldViewBuilder: (context, textEditingController,
+                            focusNode, onFieldSubmitted) {
                           return TextFormField(
                             controller: textEditingController,
                             focusNode: focusNode,
                             decoration: const InputDecoration(
-                              hintText: 'Buscar Material',
-                            ),
+                                hintText: 'Buscar Material'),
                             onFieldSubmitted: (String value) {
                               onFieldSubmitted();
                             },
                           );
                         },
-                        onSelected: (String selectedMaterial) {
-                          // Aquí actualizamos el material seleccionado basado en el nombre.
-                          String selectedId = _materialsMap.keys.firstWhere(
-                              (key) => _materialsMap[key] == selectedMaterial);
-                          _updateMaterial(index, selectedId, material.quantity,
-                              material.unit);
-                        },
                       ),
                     ),
                     DataCell(
                       SizedBox(
-                        width: 40,
+                        width: 60,
                         child: TextFormField(
                           initialValue: material.quantity,
                           onChanged: (value) {
-                            _updateMaterial(
-                                index, material.name, value, material.unit);
+                            int? enteredQuantity = int.tryParse(value);
+                            String selectedId = _materialsData.keys.firstWhere(
+                              (key) =>
+                                  _materialsData[key]?['name'] == material.name,
+                              orElse: () => '',
+                            );
+                            if (selectedId.isNotEmpty) {
+                              int availableQuantity = _materialsData[selectedId]
+                                      ?['quantity'] as int? ??
+                                  0;
+                              if (enteredQuantity != null &&
+                                  enteredQuantity > availableQuantity) {
+                                _updateMaterial(
+                                    index,
+                                    selectedId,
+                                    availableQuantity.toString(),
+                                    material.unit);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Cantidad máxima: $availableQuantity')),
+                                );
+                              } else {
+                                _updateMaterial(
+                                    index, selectedId, value, material.unit);
+                              }
+                            }
                           },
                           keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(),
+                          enabled:
+                              (_materialsData[_materialsData.keys.firstWhere(
+                                        (key) =>
+                                            _materialsData[key]?['name'] ==
+                                            material.name,
+                                        orElse: () => '',
+                                      )]?['quantity'] as int? ??
+                                      0) >
+                                  0,
+                          decoration: InputDecoration(
+                            errorText:
+                                (_materialsData[_materialsData.keys.firstWhere(
+                                              (key) =>
+                                                  _materialsData[key]
+                                                      ?['name'] ==
+                                                  material.name,
+                                              orElse: () => '',
+                                            )]?['quantity'] as int? ??
+                                            0) ==
+                                        0
+                                    ? 'Sin stock'
+                                    : null,
+                          ),
                           maxLines: 1,
                           style: const TextStyle(fontSize: 14),
                           textAlign: TextAlign.center,
@@ -433,21 +466,7 @@ class _PracticeFormState extends State<HomeDocente> {
                       ),
                     ),
                     DataCell(
-                      DropdownButton<String>(
-                        value: material.unit,
-                        items: ['Unidad', 'ML', 'Gramos'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            alignment: Alignment.center,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          _updateMaterial(index, material.name,
-                              material.quantity, newValue!);
-                        },
-                        isExpanded: true,
-                      ),
+                      Text(material.unit),
                     ),
                     DataCell(
                       IconButton(

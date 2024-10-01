@@ -12,6 +12,8 @@ import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
 import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
 import 'package:provider/provider.dart';
 
+final List<TextEditingController> _quantityControllers = [];
+
 class HomeDocente extends StatefulWidget {
   const HomeDocente({super.key});
 
@@ -348,6 +350,9 @@ class _PracticeFormState extends State<HomeDocente> {
               rows: _materials.asMap().entries.map((entry) {
                 int index = entry.key;
                 LabMaterial material = entry.value;
+                if (_quantityControllers.length <= index) {
+                  _quantityControllers.add(TextEditingController(text: material.quantity));
+                }
                 return DataRow(
                   cells: [
                     DataCell(
@@ -405,7 +410,7 @@ class _PracticeFormState extends State<HomeDocente> {
                       SizedBox(
                         width: 60,
                         child: TextFormField(
-                          initialValue: material.quantity,
+                          controller: _quantityControllers[index],
                           onChanged: (value) {
                             int? enteredQuantity = int.tryParse(value);
                             String selectedId = _materialsData.keys.firstWhere(
@@ -419,6 +424,16 @@ class _PracticeFormState extends State<HomeDocente> {
                                   0;
                               if (enteredQuantity != null &&
                                   enteredQuantity > availableQuantity) {
+                                // Actualiza el valor del campo a la cantidad máxima
+                                _quantityControllers[index].text =
+                                    availableQuantity.toString();
+                                // Mueve el cursor al final del texto
+                                _quantityControllers[index].selection =
+                                    TextSelection.fromPosition(
+                                  TextPosition(
+                                      offset:
+                                          availableQuantity.toString().length),
+                                );
                                 _updateMaterial(
                                     index,
                                     selectedId,
@@ -481,6 +496,13 @@ class _PracticeFormState extends State<HomeDocente> {
             ),
           );
   }
+ @override
+  void dispose() {
+    for (var controller in _quantityControllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  } 
 
 //Seccion de confirmacion para solicitud
   Widget _buildConfirmationBox() {
@@ -510,4 +532,5 @@ class _PracticeFormState extends State<HomeDocente> {
       ),
     );
   }
+
 }

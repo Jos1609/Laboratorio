@@ -4,6 +4,7 @@ import 'package:laboratorio/data/models/navigation_model.dart';
 import 'package:laboratorio/ui/screens/docente/history_docente.dart';
 import 'package:laboratorio/ui/screens/docente/muestras_docente.dart';
 import 'package:laboratorio/ui/screens/superAdm/super_adm.dart';
+import 'package:laboratorio/ui/screens/user/user_profile.dart';
 import 'firebase_options.dart';
 import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:provider/provider.dart';
@@ -58,6 +59,7 @@ class MyApp extends StatelessWidget {
           '/history': (context) => const HistoryDocente(),
           '/muestras': (context) => const MuestrasDocente(),
           '/super': (context) => const RegistroUsuarioScreen(),
+          '/profile': (context) => const UserProfile(),
         },
         debugShowCheckedModeBanner: false,
       ),

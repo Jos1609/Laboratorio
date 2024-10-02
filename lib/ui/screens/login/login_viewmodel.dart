@@ -82,4 +82,21 @@ class LoginViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+  // Método para actualizar la contraseña
+  
+  Future<void> updatePassword(String newPassword) async {
+  final user = FirebaseAuth.instance.currentUser;
+
+  if (user != null) {
+    try {
+      await user.updatePassword(newPassword);
+      // Contraseña actualizada exitosamente
+    } catch (e) {
+      // Manejar errores, como la expiración de las credenciales o falta de reautenticación
+      print('Error al actualizar la contraseña: $e');
+    }
+  } else {
+    print('No hay usuario autenticado.');
+  }
+}
 }

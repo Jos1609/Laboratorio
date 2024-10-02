@@ -2,15 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
-import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/data/models/muestra.dart';
 import 'package:laboratorio/data/models/solicitud_model.dart';
 import 'package:laboratorio/services/auth_service.dart';
 import 'package:laboratorio/services/muestra_service.dart';
 import 'package:laboratorio/ui/screens/login/login_screen.dart';
-import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
-import 'package:provider/provider.dart';
 import 'dart:convert';
 
 class HistoryDocente extends StatefulWidget {
@@ -89,20 +86,7 @@ class _HistoryDocenteState extends State<HistoryDocente> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Historial de muestras y solicitudes'),
-        backgroundColor: AppColors.mainColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              final loginViewModel =
-                  Provider.of<LoginViewModel>(context, listen: false);
-              loginViewModel.signOut(context);
-            },
-          ),
-        ],
-      ),
+      
       body: DefaultTabController(
         length: 2, // Una pestaña para Muestras y otra para Solicitudes
         child: Column(
@@ -211,6 +195,7 @@ class _HistoryDocenteState extends State<HistoryDocente> {
                   children: [
                     Text('Fecha Dejado: ${muestra.date ?? 'No especificada'}'),
                     Text('Curso: ${muestra.course}'),
+                    Text('Recogido: ${muestra.dateR ?? 'No recogida'}'),
                   ],
                 ),
                 trailing: ElevatedButton(

@@ -25,12 +25,16 @@ class CustomNavigationBar extends StatelessWidget {
               case 2:
                 Navigator.pushReplacementNamed(context, '/muestras');
                 break;
+              case 3:
+                Navigator.pushReplacementNamed(context, '/profile');
+                break;
             }
           },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
             BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Historial'),
             BottomNavigationBarItem(icon: Icon(Icons.science), label: 'Muestras'),
+            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
           ],
         );
       },

@@ -6,11 +6,9 @@ import 'package:laboratorio/core/utils/validators.dart';
 import 'package:laboratorio/data/models/solicitud_model.dart';
 import 'package:laboratorio/data/models/material.dart';
 import 'package:laboratorio/data/repositories/solicitud_repository.dart';
-import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
 import 'package:laboratorio/ui/widgets/auto_dismiss_alert.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
 import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
-import 'package:provider/provider.dart';
 
 final List<TextEditingController> _quantityControllers = [];
 
@@ -152,21 +150,6 @@ class _PracticeFormState extends State<HomeDocente> {
   //seccion de curso, practica, alumnos, turno
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Solicitud para laboratorio'),
-        backgroundColor: AppColors.mainColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // Llamar al método signOut del LoginViewModel
-              final loginViewModel =
-                  Provider.of<LoginViewModel>(context, listen: false);
-              loginViewModel.signOut(context);
-            },
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

@@ -32,10 +32,21 @@ class CustomNavigationBar extends StatelessWidget {
           },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Inicio'),
-            BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Historial'),
-            BottomNavigationBarItem(icon: Icon(Icons.science), label: 'Muestras'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.history), label: 'Historial'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.science), label: 'Muestras'),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Perfil'),
           ],
+          selectedItemColor:
+              Colors.black,
+          unselectedItemColor:
+              Colors.grey,
+          showSelectedLabels: true, 
+          showUnselectedLabels:
+              true, 
+          type: BottomNavigationBarType
+              .fixed, 
         );
       },
     );

@@ -3,7 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 
 class MaterialRepository {
   final DatabaseReference _ref =
-      FirebaseDatabase.instance.ref().child('user');
+      FirebaseDatabase.instance.ref().child('materiales');
   final DatabaseReference _materialRef = FirebaseDatabase.instance.ref().child('materiales');
 
 

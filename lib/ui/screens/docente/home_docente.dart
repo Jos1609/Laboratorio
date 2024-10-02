@@ -82,7 +82,7 @@ class _PracticeFormState extends State<HomeDocente> {
               : null,
           startTime: _selectedStartTime?.format(context),
           endTime: _selectedEndTime?.format(context),
-          materials: _materials
+          materials: _materials 
               .map((m) =>
                   LabMaterial(name: m.name, quantity: m.quantity, unit: m.unit))
               .toList(),
@@ -90,10 +90,11 @@ class _PracticeFormState extends State<HomeDocente> {
         );
 
         try {
-          await _solicitudRepository.createSolicitud(solicitud);
+          await _solicitudRepository.createSolicitud(solicitud);          
           // Mostrar mensaje de éxito
           showAutoDismissAlert(context, 'Se envió correctamente la solicitud',
               const Color.fromARGB(255, 41, 10, 112));
+
           // Vaciar campos
           setState(() {
             _titleController.clear();

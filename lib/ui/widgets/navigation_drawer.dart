@@ -27,7 +27,7 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
 
   List<Widget> _buildNavigationActions(BuildContext context) {
     return [
-      _buildNavButton(context, 'Materiales', '/materiales'),
+      _buildNavButton(context, 'Materiales', '/home-admin'),
       _buildNavButton(context, 'Solicitudes', '/solicitudes'),
       _buildNavButton(context, 'Incidencias', '/incidencias'),
       Padding(
@@ -80,7 +80,7 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
               ),
             ),
           ),
-          _buildDrawerItem(context, 'Materiales', '/materiales'),
+          _buildDrawerItem(context, 'Materiales', '/home-admin'),
           _buildDrawerItem(context, 'Solicitudes', '/solicitudes'),
           _buildDrawerItem(context, 'Incidencias', '/incidencias'),
           ListTile(

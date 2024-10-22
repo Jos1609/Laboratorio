@@ -15,7 +15,9 @@ class IncidenciasScreen extends StatelessWidget {
           ),
         ),
       ),
-      drawer: GlobalNavigationBar().buildCustomDrawer(context),
+      drawer: MediaQuery.of(context).size.width < 600
+          ? GlobalNavigationBar().buildCustomDrawer(context)
+          : null, // Si es pantalla grande, no mostrar el Drawer
     );
   }
 }

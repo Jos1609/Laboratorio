@@ -148,7 +148,7 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     );
 
     // Escribir encabezados en la primera fila
-    var headers = ['Indice', 'Material', 'Stock', 'UM'];
+    var headers = ['Indice', 'Material', 'Cantidad', 'Estado'];
     for (int i = 0; i < headers.length; i++) {
       var cell = sheetObject
           .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
@@ -261,10 +261,10 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                       child: Text('Material',
                           style: TextStyle(fontWeight: FontWeight.bold))),
                   Expanded(
-                      child: Text('Stock',
+                      child: Text('cantidad',
                           style: TextStyle(fontWeight: FontWeight.bold))),
                   Expanded(
-                      child: Text('Unidad de medida',
+                      child: Text('Estado',
                           style: TextStyle(fontWeight: FontWeight.bold))),
                   Expanded(
                       child: Text('Acciones',

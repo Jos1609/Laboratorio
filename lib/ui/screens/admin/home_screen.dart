@@ -25,6 +25,8 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
   List<Map<dynamic, dynamic>> materials = [];
   List<Map<dynamic, dynamic>> filteredMaterials = [];
   String searchQuery = "";
+  int currentPage = 0;
+  final int itemsPerPage = 15;
 
   @override
   void initState() {
@@ -64,18 +66,29 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
 
   void _filterMaterials() {
     setState(() {
-      filteredMaterials = materials
+      // Filtrar y aplicar paginación
+      final searchResults = materials
           .where((material) => material['name']
               .toString()
               .toLowerCase()
               .contains(searchQuery.toLowerCase()))
           .toList();
+
+      // Calcular los elementos de la página actual
+      int start = currentPage * itemsPerPage;
+      int end = start + itemsPerPage;
+
+      filteredMaterials = searchResults.sublist(
+        start,
+        end > searchResults.length ? searchResults.length : end,
+      );
     });
   }
 
   void _onSearchChanged(String value) {
     setState(() {
       searchQuery = value;
+      currentPage = 0; // Reiniciar a la primera página
       _filterMaterials();
     });
   }
@@ -221,6 +234,25 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
     }
   }
 
+  void _goToPreviousPage() {
+    if (currentPage > 0) {
+      setState(() {
+        currentPage--;
+        _filterMaterials();
+      });
+    }
+  }
+
+  void _goToNextPage() {
+    final maxPage = (materials.length / itemsPerPage).ceil() - 1;
+    if (currentPage < maxPage) {
+      setState(() {
+        currentPage++;
+        _filterMaterials();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -311,6 +343,20 @@ class _HomeAdminScreenState extends State<HomeAdminScreen> {
                   }).toList(),
                 ),
               ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _goToPreviousPage,
+                ),
+                Text('Pag. ${currentPage + 1}'),
+                IconButton(
+                  icon: const Icon(Icons.arrow_forward),
+                  onPressed: _goToNextPage,
+                ),
+              ],
             ),
           ],
         ),

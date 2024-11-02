@@ -46,8 +46,28 @@ class Solicitud {
       date: map['date'],
       startTime: map['startTime'],
       endTime: map['endTime'],
-      materials: (map['materials'] as List?)?.map((m) => LabMaterial.fromMap(m as Map<String, dynamic>)).toList() ?? [],
+      materials: (map['materials'] as List?)
+              ?.map((m) => LabMaterial.fromMap(m as Map<String, dynamic>))
+              .toList() ??
+          [],
       userId: map['userId'] ?? '',
+    );
+  }
+
+  factory Solicitud.fromJson(Map<String, dynamic> json) {
+    return Solicitud(
+      title: json['title'] as String? ?? '',
+      course: json['course'] as String? ?? '',
+      studentCount: json['studentCount']?.toString() ?? '',
+      turn: json['turn'] as String? ?? '',
+      date: json['date'] as String?,
+      startTime: json['startTime'] as String?,
+      endTime: json['endTime'] as String?,
+      materials: (json['materials'] as List<dynamic>?)
+              ?.map((m) => LabMaterial.fromMap(m as Map<String, dynamic>))
+              .toList() ??
+          [],
+      userId: json['userId'] as String? ?? '',
     );
   }
 }

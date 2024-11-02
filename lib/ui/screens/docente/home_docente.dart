@@ -10,6 +10,32 @@ import 'package:laboratorio/ui/widgets/auto_dismiss_alert.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
 import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
 
+class TimeRanges {
+  static const morningStart = TimeOfDay(hour: 7, minute: 0);
+  static const morningEnd = TimeOfDay(hour: 11, minute: 59);
+  static const afternoonStart = TimeOfDay(hour: 12, minute: 0);
+  static const afternoonEnd = TimeOfDay(hour: 17, minute: 29);
+  static const eveningStart = TimeOfDay(hour: 17, minute: 30);
+  static const eveningEnd = TimeOfDay(hour: 22, minute: 20);
+}
+extension TimeOfDayExtension on TimeOfDay {
+  bool isAfter(TimeOfDay other) {
+    return hour > other.hour || (hour == other.hour && minute > other.minute);
+  }
+
+  bool isBefore(TimeOfDay other) {
+    return hour < other.hour || (hour == other.hour && minute < other.minute);
+  }
+
+  bool isBetween(TimeOfDay start, TimeOfDay end) {
+    return !isBefore(start) && !isAfter(end);
+  }
+
+  int toMinutes() {
+    return hour * 60 + minute;
+  }
+}
+
 final List<TextEditingController> _quantityControllers = [];
 
 class HomeDocente extends StatefulWidget {
@@ -32,6 +58,86 @@ class _PracticeFormState extends State<HomeDocente> {
   TimeOfDay? _selectedStartTime;
   TimeOfDay? _selectedEndTime;
   Map<String, dynamic> _materialsData = {};
+  List<Solicitud> _existingRequests = [];
+  String? _timeError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMaterialsFromFirebase();
+  }
+
+ // Cargar solicitudes existentes para una fecha
+Future<void> _loadExistingRequests(DateTime date) async {
+  try {
+    final requests = await _solicitudRepository.getSolicitudesByDate(date);
+    setState(() {
+      _existingRequests = requests;
+    });
+  
+  } catch (e) {
+    print('Error loading existing requests: $e');
+  }
+}
+// Validar el turno según la hora seleccionada
+void _validateAndUpdateTurn(TimeOfDay time) {
+  String appropriateTurn;
+
+  if (time.isBetween(TimeRanges.morningStart, TimeRanges.morningEnd)) {
+    appropriateTurn = 'Mañana';
+  } else if (time.isBetween(TimeRanges.afternoonStart, TimeRanges.afternoonEnd)) {
+    appropriateTurn = 'Tarde';
+  } else if (time.isBetween(TimeRanges.eveningStart, TimeRanges.eveningEnd)) {
+    appropriateTurn = 'Noche';
+  } else {
+    setState(() {
+      _timeError = 'Horario fuera del rango permitido (7:00 - 22:00)';
+      _selectedStartTime = null;
+    });   
+    return;
+  }
+  setState(() {
+    _selectedTurn = appropriateTurn;
+    _timeError = null;
+  });
+ 
+}
+
+// Verificar solapamiento con otras solicitudes
+bool _hasTimeConflict(TimeOfDay startTime, TimeOfDay endTime) {
+ 
+  for (var request in _existingRequests) {
+    TimeOfDay existingStart = _parseTimeOfDay(request.startTime!);
+    TimeOfDay existingEnd = _parseTimeOfDay(request.endTime!);
+
+    // Verificar si existe un solapamiento en el horario
+    bool overlap = (startTime.toMinutes() < existingEnd.toMinutes() &&
+        endTime.toMinutes() > existingStart.toMinutes());
+    if (overlap) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Conversión de hora de cadena a TimeOfDay
+TimeOfDay _parseTimeOfDay(String timeStr) {
+  final parts = timeStr.split(' ');
+  final timeParts = parts[0].split(':');
+  final hour = int.parse(timeParts[0].trim());
+  final minute = int.parse(timeParts[1].trim());
+  final period = parts[1].trim();
+
+  // Convertir AM/PM al formato de 24 horas
+  if (period == 'PM' && hour != 12) {
+    return TimeOfDay(hour: hour + 12, minute: minute);
+  } else if (period == 'AM' && hour == 12) {
+    return TimeOfDay(hour: 0, minute: minute);
+  } else {
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+}
+
 
   void _addMaterial() {
     setState(() {
@@ -64,70 +170,6 @@ class _PracticeFormState extends State<HomeDocente> {
     });
   }
 
-  Future<void> _submitSolicitud() async {
-    if (_isConfirmed &&
-        _isValidStudentCount &&
-        _titleController.text.isNotEmpty &&
-        _courseController.text.isNotEmpty &&
-        _studentCountController.text.isNotEmpty) {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final solicitud = Solicitud(
-          title: _titleController.text,
-          course: _courseController.text,
-          studentCount: _studentCountController.text,
-          turn: _selectedTurn,
-          date: _selectedDate != null
-              ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-              : null,
-          startTime: _selectedStartTime?.format(context),
-          endTime: _selectedEndTime?.format(context),
-          materials: _materials 
-              .map((m) =>
-                  LabMaterial(name: m.name, quantity: m.quantity, unit: m.unit))
-              .toList(),
-          userId: user.uid,
-        );
-
-        try {
-          await _solicitudRepository.createSolicitud(solicitud);          
-          // Mostrar mensaje de éxito
-          showAutoDismissAlert(context, 'Se envió correctamente la solicitud',
-              const Color.fromARGB(255, 41, 10, 112));
-
-          // Vaciar campos
-          setState(() {
-            _titleController.clear();
-            _courseController.clear();
-            _studentCountController.clear();
-            _selectedTurn = 'Mañana';
-            _selectedDate = null;
-            _selectedStartTime = null;
-            _selectedEndTime = null;
-            _materials.clear();
-            _isConfirmed = false;
-          });
-        } catch (e) {
-          showAutoDismissAlert(context, 'No se pudo enviar la solicitud',
-              const Color.fromARGB(255, 227, 6, 6));
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Usuario no autenticado')),
-        );
-      }
-    } else {
-      showAutoDismissAlert(context, 'Complete todos los datos',
-          const Color.fromARGB(255, 227, 6, 6));
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _loadMaterialsFromFirebase();
-  }
-
   Future<void> _loadMaterialsFromFirebase() async {
     final DatabaseReference materialsRef =
         FirebaseDatabase.instance.ref().child('materiales');
@@ -148,7 +190,87 @@ class _PracticeFormState extends State<HomeDocente> {
     }
   }
 
-  //seccion de curso, practica, alumnos, turno
+  Future<void> _submitSolicitud() async {
+    if (_isConfirmed &&
+        _isValidStudentCount &&
+        _titleController.text.isNotEmpty &&
+        _courseController.text.isNotEmpty &&
+        _studentCountController.text.isNotEmpty &&
+        _selectedDate != null &&
+        _selectedStartTime != null &&
+        _selectedEndTime != null) {
+      // Verificar conflictos de horario antes de enviar
+      if (_hasTimeConflict(_selectedStartTime!, _selectedEndTime!)) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Cruce de Horario'),
+            content: const Text(
+                'Ya existe una solicitud programada para este horario. Por favor seleccione otro horario.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final solicitud = Solicitud(
+          title: _titleController.text,
+          course: _courseController.text,
+          studentCount: _studentCountController.text,
+          turn: _selectedTurn,
+          date:
+              '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+          startTime: _selectedStartTime?.format(context),
+          endTime: _selectedEndTime?.format(context),
+          materials: _materials
+              .map((m) =>
+                  LabMaterial(name: m.name, quantity: m.quantity, unit: m.unit))
+              .toList(),
+          userId: user.uid,
+        );
+
+        try {
+          await _solicitudRepository.createSolicitud(solicitud);
+          showAutoDismissAlert(context, 'Solicitud enviada correctamente',
+              const Color.fromARGB(255, 41, 10, 112));
+
+          setState(() {
+            _titleController.clear();
+            _courseController.clear();
+            _studentCountController.clear();
+            _selectedTurn = 'Mañana';
+            _selectedDate = null;
+            _selectedStartTime = null;
+            _selectedEndTime = null;
+            _materials.clear();
+            _isConfirmed = false;
+            _timeError = null;
+          });
+        } catch (e) {
+          showAutoDismissAlert(context, 'Error al enviar la solicitud',
+              const Color.fromARGB(255, 227, 6, 6));
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Usuario no autenticado')),
+        );
+      }
+    } else {
+      showAutoDismissAlert(
+          context,
+          'Por favor complete todos los campos requeridos',
+          const Color.fromARGB(255, 227, 6, 6));
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
@@ -192,11 +314,8 @@ class _PracticeFormState extends State<HomeDocente> {
                       child: Text(value),
                     );
                   }).toList(),
-                  onChanged: (String? newValue) {
-                    setState(() {
-                      _selectedTurn = newValue!;
-                    });
-                  },
+                  onChanged:
+                      null, // Deshabilitado porque se actualiza automáticamente
                 ),
               ],
             ),
@@ -223,93 +342,182 @@ class _PracticeFormState extends State<HomeDocente> {
           ],
         ),
       ),
-      bottomNavigationBar:
-          const CustomNavigationBar(), //llamamos a la barra de navegacion
+      bottomNavigationBar: const CustomNavigationBar(),
     );
   }
+  Future<void> _selectStartTime() async {
+    TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 07, minute: 00),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            timePickerTheme: TimePickerThemeData(
+              hourMinuteShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
 
-//Seccion de fecha y hora
+    if (pickedTime != null) {
+      // Validar que está dentro del horario permitido
+      if (!pickedTime.isBetween(TimeRanges.morningStart, TimeRanges.eveningEnd)) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Horario no permitido'),
+            content: const Text('Por favor seleccione un horario entre las 7:00 y 22:00'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Actualizar la hora y el turno
+      setState(() {
+        _selectedStartTime = pickedTime;
+        _validateAndUpdateTurn(pickedTime);
+      });
+    }
+  }
+
   Widget _buildDateTimeSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
+    return Column(
       children: [
-        // Campo para la Fecha
-        Column(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            IconButton(
-              icon: const Icon(Icons.calendar_today),
-              onPressed: () async {
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    _selectedDate = pickedDate;
-                  });
-                }
-              },
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.calendar_today),
+                  onPressed: () async {
+                    DateTime? pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        _selectedDate = pickedDate;
+                        _selectedStartTime = null;
+                        _selectedEndTime = null;
+                        _timeError = null;
+                      });
+                      await _loadExistingRequests(pickedDate);
+                    }
+                  },
+                ),
+                Text(
+                  _selectedDate != null
+                      ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
+                      : 'Fecha',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
             ),
-            Text(
-              _selectedDate != null
-                  ? '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}'
-                  : 'Fecha',
-              style: const TextStyle(fontSize: 14),
+
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.access_time),
+                  onPressed: _selectStartTime,
+                ),
+                Text(
+                  _selectedStartTime != null
+                      ? _selectedStartTime!.format(context)
+                      : 'Inicio',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
+            ),
+
+            Column(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.access_time),
+                  onPressed: () async {
+                    if (_selectedStartTime == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                              'Por favor seleccione primero la hora de inicio'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    TimeOfDay? pickedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay(
+                        hour: _selectedStartTime!.hour + 1,
+                        minute: _selectedStartTime!.minute,
+                      ),
+                    );
+
+                    if (pickedTime != null) {
+                      if (pickedTime.isBefore(_selectedStartTime!)) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                                'La hora de fin debe ser posterior a la hora de inicio'),
+                          ),
+                        );
+                        return;
+                      }
+
+                      if (_hasTimeConflict(_selectedStartTime!, pickedTime)) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Conflicto de horario'),
+                            content: const Text(
+                                'Ya existe una solicitud programada para este horario'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+
+                      setState(() {
+                        _selectedEndTime = pickedTime;
+                      });
+                    }
+                  },
+                ),
+                Text(
+                  _selectedEndTime != null
+                      ? _selectedEndTime!.format(context)
+                      : 'Fin',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ],
             ),
           ],
         ),
-        // Campo para la Hora de inicio
-        Column(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.access_time),
-              onPressed: () async {
-                TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: const TimeOfDay(hour: 07, minute: 00),
-                );
-                if (pickedTime != null) {
-                  setState(() {
-                    _selectedStartTime = pickedTime;
-                  });
-                }
-              },
+        if (_timeError != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              _timeError!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
             ),
-            Text(
-              _selectedStartTime != null
-                  ? _selectedStartTime!.format(context)
-                  : 'Inicio',
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-        // Campo para la Hora de fin
-        Column(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.access_time),
-              onPressed: () async {
-                TimeOfDay? pickedTime = await showTimePicker(
-                  context: context,
-                  initialTime: const TimeOfDay(hour: 22, minute: 20),
-                );
-                if (pickedTime != null) {
-                  setState(() {
-                    _selectedEndTime = pickedTime;
-                  });
-                }
-              },
-            ),
-            Text(
-              _selectedEndTime != null
-                  ? _selectedEndTime!.format(context)
-                  : 'Fin',
-              style: const TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
+          ),
       ],
     );
   }
@@ -335,7 +543,8 @@ class _PracticeFormState extends State<HomeDocente> {
                 int index = entry.key;
                 LabMaterial material = entry.value;
                 if (_quantityControllers.length <= index) {
-                  _quantityControllers.add(TextEditingController(text: material.quantity));
+                  _quantityControllers
+                      .add(TextEditingController(text: material.quantity));
                 }
                 return DataRow(
                   cells: [
@@ -480,13 +689,14 @@ class _PracticeFormState extends State<HomeDocente> {
             ),
           );
   }
- @override
+
+  @override
   void dispose() {
     for (var controller in _quantityControllers) {
       controller.dispose();
     }
     super.dispose();
-  } 
+  }
 
 //Seccion de confirmacion para solicitud
   Widget _buildConfirmationBox() {
@@ -516,5 +726,4 @@ class _PracticeFormState extends State<HomeDocente> {
       ),
     );
   }
-
 }

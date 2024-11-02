@@ -18,6 +18,7 @@ class TimeRanges {
   static const eveningStart = TimeOfDay(hour: 17, minute: 30);
   static const eveningEnd = TimeOfDay(hour: 22, minute: 20);
 }
+
 extension TimeOfDayExtension on TimeOfDay {
   bool isAfter(TimeOfDay other) {
     return hour > other.hour || (hour == other.hour && minute > other.minute);
@@ -67,77 +68,75 @@ class _PracticeFormState extends State<HomeDocente> {
     _loadMaterialsFromFirebase();
   }
 
- // Cargar solicitudes existentes para una fecha
-Future<void> _loadExistingRequests(DateTime date) async {
-  try {
-    final requests = await _solicitudRepository.getSolicitudesByDate(date);
-    setState(() {
-      _existingRequests = requests;
-    });
-  
-  } catch (e) {
-    print('Error loading existing requests: $e');
-  }
-}
-// Validar el turno según la hora seleccionada
-void _validateAndUpdateTurn(TimeOfDay time) {
-  String appropriateTurn;
-
-  if (time.isBetween(TimeRanges.morningStart, TimeRanges.morningEnd)) {
-    appropriateTurn = 'Mañana';
-  } else if (time.isBetween(TimeRanges.afternoonStart, TimeRanges.afternoonEnd)) {
-    appropriateTurn = 'Tarde';
-  } else if (time.isBetween(TimeRanges.eveningStart, TimeRanges.eveningEnd)) {
-    appropriateTurn = 'Noche';
-  } else {
-    setState(() {
-      _timeError = 'Horario fuera del rango permitido (7:00 - 22:00)';
-      _selectedStartTime = null;
-    });   
-    return;
-  }
-  setState(() {
-    _selectedTurn = appropriateTurn;
-    _timeError = null;
-  });
- 
-}
-
-// Verificar solapamiento con otras solicitudes
-bool _hasTimeConflict(TimeOfDay startTime, TimeOfDay endTime) {
- 
-  for (var request in _existingRequests) {
-    TimeOfDay existingStart = _parseTimeOfDay(request.startTime!);
-    TimeOfDay existingEnd = _parseTimeOfDay(request.endTime!);
-
-    // Verificar si existe un solapamiento en el horario
-    bool overlap = (startTime.toMinutes() < existingEnd.toMinutes() &&
-        endTime.toMinutes() > existingStart.toMinutes());
-    if (overlap) {
-      return true;
+  // Cargar solicitudes existentes para una fecha
+  Future<void> _loadExistingRequests(DateTime date) async {
+    try {
+      final requests = await _solicitudRepository.getSolicitudesByDate(date);
+      setState(() {
+        _existingRequests = requests;
+      });
+    } catch (e) {
+      print('Error loading existing requests: $e');
     }
   }
-  return false;
-}
+
+// Validar el turno según la hora seleccionada
+  void _validateAndUpdateTurn(TimeOfDay time) {
+    String appropriateTurn;
+
+    if (time.isBetween(TimeRanges.morningStart, TimeRanges.morningEnd)) {
+      appropriateTurn = 'Mañana';
+    } else if (time.isBetween(
+        TimeRanges.afternoonStart, TimeRanges.afternoonEnd)) {
+      appropriateTurn = 'Tarde';
+    } else if (time.isBetween(TimeRanges.eveningStart, TimeRanges.eveningEnd)) {
+      appropriateTurn = 'Noche';
+    } else {
+      setState(() {
+        _timeError = 'Horario fuera del rango permitido (7:00 - 22:00)';
+        _selectedStartTime = null;
+      });
+      return;
+    }
+    setState(() {
+      _selectedTurn = appropriateTurn;
+      _timeError = null;
+    });
+  }
+
+// Verificar solapamiento con otras solicitudes
+  bool _hasTimeConflict(TimeOfDay startTime, TimeOfDay endTime) {
+    for (var request in _existingRequests) {
+      TimeOfDay existingStart = _parseTimeOfDay(request.startTime!);
+      TimeOfDay existingEnd = _parseTimeOfDay(request.endTime!);
+
+      // Verificar si existe un solapamiento en el horario
+      bool overlap = (startTime.toMinutes() < existingEnd.toMinutes() &&
+          endTime.toMinutes() > existingStart.toMinutes());
+      if (overlap) {
+        return true;
+      }
+    }
+    return false;
+  }
 
 // Conversión de hora de cadena a TimeOfDay
-TimeOfDay _parseTimeOfDay(String timeStr) {
-  final parts = timeStr.split(' ');
-  final timeParts = parts[0].split(':');
-  final hour = int.parse(timeParts[0].trim());
-  final minute = int.parse(timeParts[1].trim());
-  final period = parts[1].trim();
+  TimeOfDay _parseTimeOfDay(String timeStr) {
+    final parts = timeStr.split(' ');
+    final timeParts = parts[0].split(':');
+    final hour = int.parse(timeParts[0].trim());
+    final minute = int.parse(timeParts[1].trim());
+    final period = parts[1].trim();
 
-  // Convertir AM/PM al formato de 24 horas
-  if (period == 'PM' && hour != 12) {
-    return TimeOfDay(hour: hour + 12, minute: minute);
-  } else if (period == 'AM' && hour == 12) {
-    return TimeOfDay(hour: 0, minute: minute);
-  } else {
-    return TimeOfDay(hour: hour, minute: minute);
+    // Convertir AM/PM al formato de 24 horas
+    if (period == 'PM' && hour != 12) {
+      return TimeOfDay(hour: hour + 12, minute: minute);
+    } else if (period == 'AM' && hour == 12) {
+      return TimeOfDay(hour: 0, minute: minute);
+    } else {
+      return TimeOfDay(hour: hour, minute: minute);
+    }
   }
-}
-
 
   void _addMaterial() {
     setState(() {
@@ -209,7 +208,12 @@ TimeOfDay _parseTimeOfDay(String timeStr) {
                 'Ya existe una solicitud programada para este horario. Por favor seleccione otro horario.'),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  setState(() {
+                    _selectedEndTime = null; 
+                  });
+                  Navigator.pop(context); 
+                },
                 child: const Text('OK'),
               ),
             ],
@@ -345,6 +349,7 @@ TimeOfDay _parseTimeOfDay(String timeStr) {
       bottomNavigationBar: const CustomNavigationBar(),
     );
   }
+
   Future<void> _selectStartTime() async {
     TimeOfDay? pickedTime = await showTimePicker(
       context: context,
@@ -365,12 +370,14 @@ TimeOfDay _parseTimeOfDay(String timeStr) {
 
     if (pickedTime != null) {
       // Validar que está dentro del horario permitido
-      if (!pickedTime.isBetween(TimeRanges.morningStart, TimeRanges.eveningEnd)) {
+      if (!pickedTime.isBetween(
+          TimeRanges.morningStart, TimeRanges.eveningEnd)) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Horario no permitido'),
-            content: const Text('Por favor seleccione un horario entre las 7:00 y 22:00'),
+            content: const Text(
+                'Por favor seleccione un horario entre las 7:00 y 22:00'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -426,7 +433,6 @@ TimeOfDay _parseTimeOfDay(String timeStr) {
                 ),
               ],
             ),
-
             Column(
               children: [
                 IconButton(
@@ -441,7 +447,6 @@ TimeOfDay _parseTimeOfDay(String timeStr) {
                 ),
               ],
             ),
-
             Column(
               children: [
                 IconButton(

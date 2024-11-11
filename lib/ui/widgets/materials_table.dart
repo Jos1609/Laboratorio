@@ -33,7 +33,8 @@ class _MaterialsTableState extends State<MaterialsTable> {
 
   void _addMaterialRow() {
     setState(() {
-      widget.materials.add(LabMaterial(name: '', quantity: '1', unit: 'Unidad'));
+      widget.materials
+          .add(LabMaterial(name: '', quantity: '1', unit: 'Unidad'));
       _quantityControllers.add(TextEditingController(text: '1'));
       widget.onMaterialsUpdated(widget.materials);
     });
@@ -76,21 +77,27 @@ class _MaterialsTableState extends State<MaterialsTable> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width),
+            constraints:
+                BoxConstraints(minWidth: MediaQuery.of(context).size.width),
             child: DataTable(
               columnSpacing: 10,
               columns: const [
-                DataColumn(label: Text('Material', style: TextStyle(fontSize: 12))),
-                DataColumn(label: Text('Cant.', style: TextStyle(fontSize: 12))),
-                DataColumn(label: Text('Estado', style: TextStyle(fontSize: 12))),
-                DataColumn(label: Text('Acción', style: TextStyle(fontSize: 12))),
+                DataColumn(
+                    label: Text('Material', style: TextStyle(fontSize: 12))),
+                DataColumn(
+                    label: Text('Cant.', style: TextStyle(fontSize: 12))),
+                DataColumn(
+                    label: Text('Estado', style: TextStyle(fontSize: 12))),
+                DataColumn(
+                    label: Text('Acción', style: TextStyle(fontSize: 12))),
               ],
               rows: widget.materials.asMap().entries.map((entry) {
                 int index = entry.key;
                 LabMaterial material = entry.value;
 
                 if (_quantityControllers.length <= index) {
-                  _quantityControllers.add(TextEditingController(text: material.quantity));
+                  _quantityControllers
+                      .add(TextEditingController(text: material.quantity));
                 }
 
                 // Obtener el ID del material actual
@@ -100,51 +107,72 @@ class _MaterialsTableState extends State<MaterialsTable> {
                 );
 
                 // Verificar si hay stock disponible
-                int availableQuantity = widget.materialsData[currentMaterialId]?['quantity'] as int? ?? 0;
+                int availableQuantity = widget.materialsData[currentMaterialId]
+                        ?['quantity'] as int? ??
+                    0;
                 bool hasStock = availableQuantity > 0;
 
                 return DataRow(
                   cells: [
                     DataCell(
-                      Autocomplete<String>(
-                        optionsBuilder: (TextEditingValue textEditingValue) {
-                          if (textEditingValue.text.isEmpty) {
-                            return const Iterable<String>.empty();
-                          }
-                          // Filtrar solo materiales con stock disponible
-                          return widget.materialsData.values.where((option) {
-                            return option['name'].toLowerCase().contains(
-                                  textEditingValue.text.toLowerCase(),
-                                ) &&
-                                (option['quantity'] as int? ?? 0) > 0;
-                          }).map((option) => option['name'] as String);
-                        },
-                        onSelected: (String selectedMaterial) {
-                          String selectedId = widget.materialsData.keys.firstWhere(
-                            (key) => widget.materialsData[key]?['name'] == selectedMaterial,
-                            orElse: () => '',
-                          );
-                          int availableQuantity = widget.materialsData[selectedId]?['quantity'] as int? ?? 0;
-                          String selectedUnit = widget.materialsData[selectedId]?['unit'] as String? ?? 'Unidad';
+                      Container(
+                        constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width *
+                                0.5), // Limitar el ancho
+                        child: Autocomplete<String>(
+                          optionsBuilder: (TextEditingValue textEditingValue) {
+                            if (textEditingValue.text.isEmpty) {
+                              return const Iterable<String>.empty();
+                            }
+                            // Filtrar solo materiales con stock disponible
+                            return widget.materialsData.values.where((option) {
+                              return option['name'].toLowerCase().contains(
+                                        textEditingValue.text.toLowerCase(),
+                                      ) &&
+                                  (option['quantity'] as int? ?? 0) > 0;
+                            }).map((option) => option['name'] as String);
+                          },
+                          onSelected: (String selectedMaterial) {
+                            String selectedId =
+                                widget.materialsData.keys.firstWhere(
+                              (key) =>
+                                  widget.materialsData[key]?['name'] ==
+                                  selectedMaterial,
+                              orElse: () => '',
+                            );
+                            int availableQuantity =
+                                widget.materialsData[selectedId]?['quantity']
+                                        as int? ??
+                                    0;
+                            String selectedUnit =
+                                widget.materialsData[selectedId]?['unit']
+                                        as String? ??
+                                    'Unidad';
 
-                          // Solo permitir selección si hay stock
-                          if (availableQuantity > 0) {
-                            _updateMaterialName(index, selectedMaterial, selectedUnit);
-                            _quantityControllers[index].text = '1';
-                          }
-                        },
-                        fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                          return TextFormField(
-                            controller: textEditingController,
-                            focusNode: focusNode,
-                            decoration: const InputDecoration(
-                              hintText: 'Buscar Material',
-                              isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                            ),
-                            style: const TextStyle(fontSize: 14),
-                          );
-                        },
+                            // Solo permitir selección si hay stock
+                            if (availableQuantity > 0) {
+                              _updateMaterialName(
+                                  index, selectedMaterial, selectedUnit);
+                              _quantityControllers[index].text = '1';
+                            }
+                          },
+                          fieldViewBuilder: (context, textEditingController,
+                              focusNode, onFieldSubmitted) {
+                            return TextFormField(
+                              controller: textEditingController,
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                hintText: 'Buscar Material',
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 8),
+                              ),
+                              style: const TextStyle(fontSize: 14),
+                              maxLines: 1, // Limitar a una sola línea
+                               // Ajustar el texto y añadir "..." si es demasiado largo
+                            );
+                          },
+                        ),
                       ),
                     ),
                     DataCell(
@@ -154,12 +182,15 @@ class _MaterialsTableState extends State<MaterialsTable> {
                           controller: _quantityControllers[index],
                           onChanged: (value) {
                             int? enteredQuantity = int.tryParse(value);
-                            if (currentMaterialId.isNotEmpty && enteredQuantity != null) {
+                            if (currentMaterialId.isNotEmpty &&
+                                enteredQuantity != null) {
                               if (enteredQuantity > availableQuantity) {
-                                _quantityControllers[index].text = availableQuantity.toString();
+                                _quantityControllers[index].text =
+                                    availableQuantity.toString();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('Cantidad máxima: $availableQuantity'),
+                                    content: Text(
+                                        'Cantidad máxima: $availableQuantity'),
                                     duration: const Duration(seconds: 2),
                                   ),
                                 );
@@ -175,7 +206,8 @@ class _MaterialsTableState extends State<MaterialsTable> {
                           enabled: hasStock,
                           decoration: const InputDecoration(
                             isDense: true,
-                            contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                            contentPadding: EdgeInsets.symmetric(
+                                vertical: 8, horizontal: 8),
                           ),
                           maxLines: 1,
                           style: const TextStyle(fontSize: 14),
@@ -185,9 +217,12 @@ class _MaterialsTableState extends State<MaterialsTable> {
                     ),
                     DataCell(
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: hasStock ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          color: hasStock
+                              ? Colors.green.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -202,7 +237,8 @@ class _MaterialsTableState extends State<MaterialsTable> {
                     ),
                     DataCell(
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                        icon: const Icon(Icons.delete,
+                            color: Colors.red, size: 20),
                         onPressed: () => _removeMaterialRow(index),
                       ),
                     ),

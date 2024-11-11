@@ -4,6 +4,7 @@ import 'package:laboratorio/data/models/navigation_model.dart';
 import 'package:laboratorio/ui/screens/admin/incidencias_admin.dart';
 import 'package:laboratorio/ui/screens/admin/solicitudes_admin.dart';
 import 'package:laboratorio/ui/screens/docente/history_docente.dart';
+import 'package:laboratorio/ui/screens/docente/home.dart';
 import 'package:laboratorio/ui/screens/docente/muestras_docente.dart';
 import 'package:laboratorio/ui/screens/superAdm/super_adm.dart';
 import 'package:laboratorio/ui/screens/user/user_profile.dart';
@@ -15,7 +16,7 @@ import 'ui/screens/login/login_viewmodel.dart';
 import 'data/repositories/auth_repository.dart';
 import 'services/firebase_auth_service.dart';
 import 'ui/screens/admin/home_screen.dart'; 
-import 'ui/screens/docente/home_docente.dart'; 
+//import 'ui/screens/docente/home_docente.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +58,7 @@ class MyApp extends StatelessWidget {
         routes: {
           '/': (context) => const LoginScreen(),
           '/home-admin': (context) => const HomeAdminScreen(),
-          '/home-docente': (context) => const HomeDocente(), // Ruta a la pantalla para docente
+          '/home-docente': (context) => const HomeDocente1(), // Ruta a la pantalla para docente
           '/history': (context) => const HistoryDocente(),
           '/muestras': (context) => const MuestrasDocente(),
           '/super': (context) => const RegistroUsuarioScreen(),

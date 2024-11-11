@@ -125,7 +125,8 @@ Future<List<Solicitud>> getSolicitudesByDate(DateTime? date) async {
       return Solicitud(
         date: solicitudData['date'], 
         startTime: solicitudData['startTime'],
-        endTime: solicitudData['endTime'], title: '', course: '', studentCount: '', turn: '', materials: [], userId: '',
+        endTime: solicitudData['endTime'], 
+        title: '', course: '', studentCount: '', turn: '', materials: [], userId: '',
        
       );
     } catch (e) {

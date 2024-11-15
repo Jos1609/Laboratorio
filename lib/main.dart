@@ -64,7 +64,7 @@ class MyApp extends StatelessWidget {
           '/super': (context) => const RegistroUsuarioScreen(),
           '/profile': (context) => const UserProfile(),
           '/solicitudes': (context) => SolicitudesScreen(),
-          '/incidencias': (context) => IncidenciasScreen(),
+          '/incidencias': (context) => IncidenciasAdmin(),
         },
         debugShowCheckedModeBanner: false,
       ),

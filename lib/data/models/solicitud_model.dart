@@ -10,6 +10,7 @@ class Solicitud {
   final String? endTime;
   final List<LabMaterial> materials;
   final String userId;
+  String? docente;
 
   Solicitud({
     required this.title,
@@ -21,6 +22,7 @@ class Solicitud {
     this.endTime,
     required this.materials,
     required this.userId,
+    this.docente,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,7 @@ class Solicitud {
       'endTime': endTime,
       'materials': materials.map((m) => m.toMap()).toList(),
       'userId': userId,
+      'docente': docente,
     };
   }
 
@@ -51,6 +54,7 @@ class Solicitud {
               .toList() ??
           [],
       userId: map['userId'] ?? '',
+      docente: map['docente'],
     );
   }
 
@@ -68,6 +72,7 @@ class Solicitud {
               .toList() ??
           [],
       userId: json['userId'] as String? ?? '',
+      docente: json['docente'] as String? ?? '',
     );
   }
 }

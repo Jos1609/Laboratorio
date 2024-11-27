@@ -35,6 +35,7 @@ class SolicitudRepository {
                 })
             .toList(),
         'userId': solicitud.userId,
+        'docente': solicitud.docente,
       };
 
       await _solicitudesRef.push().set(solicitudJson);

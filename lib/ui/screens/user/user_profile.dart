@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:laboratorio/services/bar_nav_service.dart';
 import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
+import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
 import 'package:provider/provider.dart';
 
 class UserProfile extends StatefulWidget {
@@ -46,7 +48,7 @@ class _UserProfileState extends State<UserProfile>
 
       if (user != null) {
         final userId = user.uid;
-
+        final userType = await getUserType(userId);
         // Intentar cargar desde docente
         final docenteSnapshot = await FirebaseDatabase.instance
             .ref()
@@ -76,8 +78,6 @@ class _UserProfileState extends State<UserProfile>
           _updateUserData(userData, 'admin');
           return;
         }
-
-        // Intentar cargar desde superadmin
         final superadminSnapshot = await FirebaseDatabase.instance
             .ref()
             .child('superadmin')
@@ -91,6 +91,7 @@ class _UserProfileState extends State<UserProfile>
           _updateUserData(userData, 'superadmin');
           return;
         }
+        this.userType = userType;
 
         print('Usuario no encontrado en ninguna colección'); // Debug print
       }
@@ -125,6 +126,12 @@ class _UserProfileState extends State<UserProfile>
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
+      appBar: userType == 'admin' ? const GlobalNavigationBar() : null,
+      drawer: userType == 'admin' && MediaQuery.of(context).size.width < 600
+          ? const GlobalNavigationBar().buildCustomDrawer(context)
+          : null,
+      bottomNavigationBar:
+          userType == 'docente' ? const CustomNavigationBar() : null,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -198,206 +205,218 @@ class _UserProfileState extends State<UserProfile>
           ),
         ),
       ),
-      bottomNavigationBar: const CustomNavigationBar(),
     );
   }
 
-Widget _buildPasswordForm() {
-  // Agregar variables de estado para controlar la visibilidad de las contraseñas
-  final ValueNotifier<bool> _showCurrentPassword = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _showNewPassword = ValueNotifier<bool>(false);
-  final ValueNotifier<bool> _showConfirmPassword = ValueNotifier<bool>(false);
 
-  return Form(
-    key: _formKeyPassword,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Cambiar Contraseña',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueGrey,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _showCurrentPassword,
-                  builder: (context, showPassword, _) {
-                    return TextFormField(
-                      controller: _currentPasswordController,
-                      obscureText: !showPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Contraseña Actual',
-                        labelStyle: TextStyle(color: Colors.grey[600]),
-                        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[600]),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            showPassword ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.grey[600],
-                          ),
-                          onPressed: () {
-                            _showCurrentPassword.value = !showPassword;
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese su contraseña actual';
-                        }
-                        return null;
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _showNewPassword,
-                  builder: (context, showPassword, _) {
-                    return TextFormField(
-                      controller: _newPasswordController,
-                      obscureText: !showPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Nueva Contraseña',
-                        labelStyle: TextStyle(color: Colors.grey[600]),
-                        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[600]),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            showPassword ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.grey[600],
-                          ),
-                          onPressed: () {
-                            _showNewPassword.value = !showPassword;
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor ingrese su nueva contraseña';
-                        }
-                        return null;
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _showConfirmPassword,
-                  builder: (context, showPassword, _) {
-                    return TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: !showPassword,
-                      decoration: InputDecoration(
-                        labelText: 'Confirmar Nueva Contraseña',
-                        labelStyle: TextStyle(color: Colors.grey[600]),
-                        prefixIcon: Icon(Icons.lock_outline, color: Colors.grey[600]),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            showPassword ? Icons.visibility : Icons.visibility_off,
-                            color: Colors.grey[600],
-                          ),
-                          onPressed: () {
-                            _showConfirmPassword.value = !showPassword;
-                          },
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.blue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Por favor confirme su nueva contraseña';
-                        } else if (value != _newPasswordController.text) {
-                          return 'Las contraseñas no coinciden';
-                        }
-                        return null;
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _handlePasswordUpdate,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shadowColor: Colors.blue.withOpacity(0.5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Actualizar Contraseña',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+
+  Widget _buildPasswordForm() {
+    final ValueNotifier<bool> _showCurrentPassword = ValueNotifier<bool>(false);
+    final ValueNotifier<bool> _showNewPassword = ValueNotifier<bool>(false);
+    final ValueNotifier<bool> _showConfirmPassword = ValueNotifier<bool>(false);
+
+    return Form(
+      key: _formKeyPassword,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Colors.grey.shade200),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Cambiar Contraseña',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueGrey,
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _showCurrentPassword,
+                    builder: (context, showPassword, _) {
+                      return TextFormField(
+                        controller: _currentPasswordController,
+                        obscureText: !showPassword,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña Actual',
+                          labelStyle: TextStyle(color: Colors.grey[600]),
+                          prefixIcon:
+                              Icon(Icons.lock_outline, color: Colors.grey[600]),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              showPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () {
+                              _showCurrentPassword.value = !showPassword;
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Colors.blue, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese su contraseña actual';
+                          }
+                          return null;
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _showNewPassword,
+                    builder: (context, showPassword, _) {
+                      return TextFormField(
+                        controller: _newPasswordController,
+                        obscureText: !showPassword,
+                        decoration: InputDecoration(
+                          labelText: 'Nueva Contraseña',
+                          labelStyle: TextStyle(color: Colors.grey[600]),
+                          prefixIcon:
+                              Icon(Icons.lock_outline, color: Colors.grey[600]),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              showPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () {
+                              _showNewPassword.value = !showPassword;
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Colors.blue, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese su nueva contraseña';
+                          }
+                          return null;
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _showConfirmPassword,
+                    builder: (context, showPassword, _) {
+                      return TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: !showPassword,
+                        decoration: InputDecoration(
+                          labelText: 'Confirmar Nueva Contraseña',
+                          labelStyle: TextStyle(color: Colors.grey[600]),
+                          prefixIcon:
+                              Icon(Icons.lock_outline, color: Colors.grey[600]),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              showPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                              color: Colors.grey[600],
+                            ),
+                            onPressed: () {
+                              _showConfirmPassword.value = !showPassword;
+                            },
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide:
+                                const BorderSide(color: Colors.blue, width: 2),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor confirme su nueva contraseña';
+                          } else if (value != _newPasswordController.text) {
+                            return 'Las contraseñas no coinciden';
+                          }
+                          return null;
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _handlePasswordUpdate,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shadowColor: Colors.blue.withOpacity(0.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Actualizar Contraseña',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   Widget _buildProfileForm() {
     final loginViewModel = Provider.of<LoginViewModel>(context, listen: false);

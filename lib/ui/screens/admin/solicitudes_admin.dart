@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:laboratorio/ui/screens/docente/home.dart';
 import '../../../data/models/solicitud_model.dart';
 import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
 import 'package:intl/intl.dart';
+import 'package:laboratorio/ui/widgets/solicitud_card.dart';
 
 class SolicitudesScreen extends StatefulWidget {
   const SolicitudesScreen({Key? key}) : super(key: key);
@@ -12,7 +14,8 @@ class SolicitudesScreen extends StatefulWidget {
 }
 
 class _SolicitudesScreenState extends State<SolicitudesScreen> {
-  final DatabaseReference _database = FirebaseDatabase.instance.ref().child('solicitudes');
+  final DatabaseReference _database =
+      FirebaseDatabase.instance.ref().child('solicitudes');
   String _searchQuery = '';
   String _selectedTurno = 'Turno';
   final List<String> _turnos = ['Turno', 'Mañana', 'Tarde', 'Noche'];
@@ -20,11 +23,14 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   DateTime? _endDate;
   List<Solicitud>? _cachedSolicitudes;
   bool _isLoading = true;
-  
+
   @override
   void initState() {
     super.initState();
     _loadSolicitudes();
+    final now = DateTime.now();
+    _startDate = DateTime(now.year, now.month, now.day);
+    _endDate = DateTime(now.year, now.month, now.day, 23, 59, 59);
   }
 
   Future<void> _loadSolicitudes() async {
@@ -48,10 +54,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
 
   List<Solicitud>? _parseSolicitudes(DataSnapshot snapshot) {
     if (snapshot.value == null) return null;
-    
+
     List<Solicitud> solicitudes = [];
     final data = snapshot.value as Map;
-    
+
     data.forEach((key, value) {
       if (value is Map) {
         try {
@@ -79,7 +85,7 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         }
       }
     });
-    
+
     return solicitudes;
   }
 
@@ -123,14 +129,17 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate ? (_startDate ?? DateTime.now()) : (_endDate ?? DateTime.now()),
+      initialDate: isStartDate
+          ? (_startDate ?? DateTime.now())
+          : (_endDate ?? DateTime.now()),
       firstDate: DateTime(2000),
       lastDate: DateTime(2101),
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
             dialogTheme: DialogTheme(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
           ),
           child: child!,
@@ -143,7 +152,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         if (isStartDate) {
           _startDate = DateTime(picked.year, picked.month, picked.day);
         } else {
-          _endDate = DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
+          _endDate =
+              DateTime(picked.year, picked.month, picked.day, 23, 59, 59);
         }
       });
     }
@@ -151,14 +161,17 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
 
   List<Solicitud> _filterSolicitudes(List<Solicitud> solicitudes) {
     return solicitudes.where((solicitud) {
-      bool matchesSearch = solicitud.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      bool matchesSearch = solicitud.title
+              .toLowerCase()
+              .contains(_searchQuery.toLowerCase()) ||
           solicitud.course.toLowerCase().contains(_searchQuery.toLowerCase());
-      
-      bool matchesTurno = _selectedTurno == 'Turno' || solicitud.turn == _selectedTurno;
-      
+
+      bool matchesTurno =
+          _selectedTurno == 'Turno' || solicitud.turn == _selectedTurno;
+
       DateTime? solicitudDate = parseDate(solicitud.date);
       bool matchesDate = true;
-      
+
       if (solicitudDate != null) {
         if (_startDate != null) {
           matchesDate = matchesDate && !solicitudDate.isBefore(_startDate!);
@@ -167,43 +180,54 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           matchesDate = matchesDate && !solicitudDate.isAfter(_endDate!);
         }
       }
-      
+
       return matchesSearch && matchesTurno && matchesDate;
     }).toList();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: GlobalNavigationBar(),
-      drawer: MediaQuery.of(context).size.width < 600
-          ? GlobalNavigationBar().buildCustomDrawer(context)
-          : null,
-      body: RefreshIndicator(
-        onRefresh: _loadSolicitudes,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return constraints.maxWidth < 600
-                      ? _buildFiltersColumn()
-                      : _buildFiltersRow();
-                },
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _buildSolicitudesList(),
-              ),
-            ],
-          ),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: GlobalNavigationBar(),
+    drawer: MediaQuery.of(context).size.width < 600
+        ? GlobalNavigationBar().buildCustomDrawer(context)
+        : null,
+    body: RefreshIndicator(
+      onRefresh: _loadSolicitudes,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return constraints.maxWidth < 600
+                    ? _buildFiltersColumn()
+                    : _buildFiltersRow();
+              },
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildSolicitudesList(),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeDocente1()),
+        );
+      },
+      tooltip: 'Crear Solicitud',
+      child: const Icon(Icons.add),
+    ),
+  );
+}
+
 
   Widget _buildSolicitudesList() {
     if (_cachedSolicitudes == null) {
@@ -258,7 +282,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
             decoration: InputDecoration(
               hintText: 'Buscar por título o curso...',
               prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
             ),
             onChanged: (value) {
@@ -272,7 +297,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
         Expanded(
           child: DropdownButtonFormField<String>(
             decoration: InputDecoration(
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16),
             ),
             value: _selectedTurno,
@@ -371,125 +397,6 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class SolicitudCard extends StatelessWidget {
-  final Solicitud solicitud;
-
-  const SolicitudCard({
-    Key? key,
-    required this.solicitud,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        title: Text(
-          solicitud.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.calendar_today, size: 16),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    solicitud.date ?? 'Sin fecha',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 16),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    '${solicitud.startTime ?? 'N/A'} - ${solicitud.endTime ?? 'N/A'}',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight:
-                  200, // Limitar la altura máxima del contenido expandido
-            ),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildInfoRow('Curso', solicitud.course),
-                  _buildInfoRow('Estudiantes', solicitud.studentCount),
-                  _buildInfoRow('Turno', solicitud.turn),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Materiales requeridos:',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ...solicitud.materials.map((material) => Padding(
-                        padding: const EdgeInsets.only(left: 8, bottom: 4),
-                        child: Text(
-                            '• ${material.name} - ${material.quantity} unidades'),
-                      )),
-                  const SizedBox(height: 16),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

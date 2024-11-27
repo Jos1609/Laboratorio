@@ -1,15 +1,18 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/core/utils/validators.dart';
 import 'package:laboratorio/data/models/solicitud_model.dart';
 import 'package:laboratorio/data/models/material.dart';
+import 'package:laboratorio/services/bar_nav_service.dart';
 import 'package:laboratorio/services/solicitud_service.dart';
 import 'package:laboratorio/ui/widgets/auto_dismiss_alert.dart';
 import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
 import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
 import 'package:laboratorio/ui/widgets/date_time_selector.dart';
 import 'package:laboratorio/ui/widgets/materials_table.dart';
+import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
 
 class HomeDocente1 extends StatefulWidget {
   const HomeDocente1({super.key});
@@ -23,6 +26,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _courseController = TextEditingController();
   final TextEditingController _studentCountController = TextEditingController();
+  final TextEditingController _docenteController = TextEditingController();
   TimeOfDay? _startSlot;
   TimeOfDay? _endSlot;
 
@@ -32,11 +36,13 @@ class _HomeDocenteState extends State<HomeDocente1> {
   bool _isConfirmed = false;
   bool _isValidStudentCount = true;
   DateTime? _selectedDate;
+  String _userType = '';
 
   @override
   void initState() {
     super.initState();
     _loadMaterialsData();
+    _getUserType();
   }
 
   Future<void> _loadMaterialsData() async {
@@ -75,10 +81,27 @@ class _HomeDocenteState extends State<HomeDocente1> {
     if (missingFields.isEmpty && _isConfirmed) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
+         String docente = '';
+      if (_userType == 'docente') {
+        final snapshot = await FirebaseDatabase.instance
+            .ref()
+            .child('docente')
+            .child(user.uid)
+            .get();
+        if (snapshot.exists) {
+          final data = snapshot.value as Map<dynamic, dynamic>;
+          final nombres = data['nombres'] as String? ?? '';
+          final apellidos = data['apellidos'] as String? ?? '';
+          docente = '$nombres $apellidos'.trim();
+        }
+      } else if (_userType == 'admin') {
+        docente = _docenteController.text;
+      }
         final solicitud = Solicitud(
           title: _titleController.text,
           course: _courseController.text,
           studentCount: _studentCountController.text,
+          docente: docente,
           turn: _selectedTurn,
           date:
               '${_selectedDate?.day}/${_selectedDate?.month}/${_selectedDate?.year}',
@@ -124,7 +147,13 @@ class _HomeDocenteState extends State<HomeDocente1> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(      
+    return Scaffold(
+      appBar: _userType == 'admin' ? const GlobalNavigationBar() : null,
+      drawer: _userType == 'admin' && MediaQuery.of(context).size.width < 600
+          ? GlobalNavigationBar().buildCustomDrawer(context)
+          : null,
+      bottomNavigationBar:
+          _userType == 'docente' ? const CustomNavigationBar() : null,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -158,6 +187,14 @@ class _HomeDocenteState extends State<HomeDocente1> {
                   ),
                 ),
                 const SizedBox(width: 10),
+                if (_userType == 'admin')
+                  Expanded(
+                    child: CustomTextField(
+                      controller: _docenteController,
+                      labelText: 'Docente',
+                    ),
+                  ),
+                if (_userType == 'admin') const SizedBox(width: 10),
                 DropdownButton<String>(
                   value: _selectedTurn,
                   items: ['Seleccionar Turno', 'Mañana', 'Tarde', 'Noche']
@@ -212,8 +249,17 @@ class _HomeDocenteState extends State<HomeDocente1> {
           ],
         ),
       ),
-      bottomNavigationBar: const CustomNavigationBar(),
     );
+  }
+
+  Future<void> _getUserType() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final userType = await getUserType(user.uid);
+      setState(() {
+        _userType = userType;
+      });
+    }
   }
 
   Widget _buildConfirmationBox() {

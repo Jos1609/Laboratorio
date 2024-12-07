@@ -1,19 +1,18 @@
-
-
 import 'package:firebase_database/firebase_database.dart';
-import 'package:laboratorio/data/models/incidencia_model.dart';
+import '../models/incidencia_model.dart';
+
 class IncidenciaRepository {
-  final DatabaseReference _dbRef = FirebaseDatabase.instance.ref().child('incidencias');
+  final DatabaseReference _database = FirebaseDatabase.instance.ref().child('incidencias');
 
   Stream<DatabaseEvent> getIncidenciasStream() {
-    return _dbRef.onValue;
+    return _database.onValue;
   }
 
-  Future<void> addIncidencia(Incidencia incidencia) {
-    return _dbRef.push().set(incidencia.toMap());
+  Future<void> addIncidencia(Incidencia incidencia) async {
+    await _database.push().set(incidencia.toMap());
   }
 
-  Future<void> updateIncidenciaStatus(String key, String estado) {
-    return _dbRef.child(key).update({'estado': estado});
+  Future<void> updateIncidenciaStatus(String id, String status) async {
+    await _database.child(id).update({'estado': status});
   }
 }

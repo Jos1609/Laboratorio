@@ -16,7 +16,7 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
       leading: isSmallScreen
           ? Builder(
               builder: (context) => IconButton(
-                icon: Icon(Icons.menu),
+                icon: const Icon(Icons.menu),
                 onPressed: () {
                   Scaffold.of(context).openDrawer();
                 },
@@ -41,7 +41,7 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
       onPressed: () {
         Navigator.of(context).pushNamed(route);
       },
-      child: Text(label, style: TextStyle(color: Colors.white)),
+      child: Text(label, style: const TextStyle(color: Colors.white)),
     );
   }
 
@@ -81,5 +81,5 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

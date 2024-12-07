@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:laboratorio/data/controllers/incidencias_controller.dart';
 import 'package:laboratorio/data/models/navigation_model.dart';
-import 'package:laboratorio/ui/screens/admin/incidencias_admin.dart';
+import 'package:laboratorio/ui/screens/admin/incidencias_admin_screen.dart';
 import 'package:laboratorio/ui/screens/admin/solicitudes_admin.dart';
 import 'package:laboratorio/ui/screens/docente/history_docente.dart';
 import 'package:laboratorio/ui/screens/docente/home.dart';
@@ -33,6 +34,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+         ChangeNotifierProvider(create: (_) => IncidenciasController()),
         Provider(create: (_) => FirebaseAuthService()),
 
         ProxyProvider<FirebaseAuthService, AuthRepository>(
@@ -63,8 +65,8 @@ class MyApp extends StatelessWidget {
           '/muestras': (context) => const MuestrasDocente(),
           '/super': (context) => const RegistroUsuarioScreen(),
           '/profile': (context) => const UserProfile(),
-          '/solicitudes': (context) => SolicitudesScreen(),
-          '/incidencias': (context) => IncidenciasAdmin(),
+          '/solicitudes': (context) => const SolicitudesScreen(),
+          '/incidencias': (context) => const IncidenciasAdminScreen(),
         },
         debugShowCheckedModeBanner: false,
       ),

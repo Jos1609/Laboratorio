@@ -5,8 +5,9 @@ import 'package:laboratorio/data/models/muestra_model.dart';
 import 'package:laboratorio/data/models/material.dart';
 import 'package:laboratorio/data/repositories/solicitud_repository.dart';
 import 'package:laboratorio/ui/widgets/auto_dismiss_alert.dart';
-import 'package:laboratorio/ui/widgets/custom_navigation_bar.dart';
 import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
+import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
+
 class MuestrasDocente extends StatefulWidget {
   const MuestrasDocente({super.key});
 
@@ -108,7 +109,11 @@ class _PracticeFormState extends State<MuestrasDocente> {
   
   //seccion de curso, practica, alumnos, turno
   Widget build(BuildContext context) {
-    return Scaffold(      
+    return Scaffold(     
+      appBar: const GlobalNavigationBar(),
+          drawer: MediaQuery.of(context).size.width < 600
+              ? const GlobalNavigationBar().buildCustomDrawer(context)
+              : null, 
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -150,7 +155,6 @@ class _PracticeFormState extends State<MuestrasDocente> {
           ],
         ),
       ),
-      bottomNavigationBar: const CustomNavigationBar(),
     );
   }
 

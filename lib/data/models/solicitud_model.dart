@@ -11,6 +11,7 @@ class Solicitud {
   final List<LabMaterial> materials;
   final String userId;
   String? docente;
+  String? laboratorio; // Nuevo atributo opcional
 
   Solicitud({
     required this.title,
@@ -23,6 +24,7 @@ class Solicitud {
     required this.materials,
     required this.userId,
     this.docente,
+    this.laboratorio, // Nuevo parámetro opcional
   });
 
   Map<String, dynamic> toMap() {
@@ -37,6 +39,7 @@ class Solicitud {
       'materials': materials.map((m) => m.toMap()).toList(),
       'userId': userId,
       'docente': docente,
+      'laboratorio': laboratorio, // Agregar al mapa
     };
   }
 
@@ -55,6 +58,7 @@ class Solicitud {
           [],
       userId: map['userId'] ?? '',
       docente: map['docente'],
+      laboratorio: map['laboratorio'], // Obtener del mapa
     );
   }
 
@@ -73,6 +77,7 @@ class Solicitud {
           [],
       userId: json['userId'] as String? ?? '',
       docente: json['docente'] as String? ?? '',
+      laboratorio: json['laboratorio'] as String?, 
     );
   }
 }

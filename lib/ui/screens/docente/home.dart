@@ -37,6 +37,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
   bool _isValidStudentCount = true;
   DateTime? _selectedDate;
   String _userType = '';
+  String? _selectedLaboratorio;
 
   @override
   void initState() {
@@ -81,22 +82,22 @@ class _HomeDocenteState extends State<HomeDocente1> {
     if (missingFields.isEmpty && _isConfirmed) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-         String docente = '';
-      if (_userType == 'docente') {
-        final snapshot = await FirebaseDatabase.instance
-            .ref()
-            .child('docente')
-            .child(user.uid)
-            .get();
-        if (snapshot.exists) {
-          final data = snapshot.value as Map<dynamic, dynamic>;
-          final nombres = data['nombres'] as String? ?? '';
-          final apellidos = data['apellidos'] as String? ?? '';
-          docente = '$nombres $apellidos'.trim();
+        String docente = '';
+        if (_userType == 'docente') {
+          final snapshot = await FirebaseDatabase.instance
+              .ref()
+              .child('docente')
+              .child(user.uid)
+              .get();
+          if (snapshot.exists) {
+            final data = snapshot.value as Map<dynamic, dynamic>;
+            final nombres = data['nombres'] as String? ?? '';
+            final apellidos = data['apellidos'] as String? ?? '';
+            docente = '$nombres $apellidos'.trim();
+          }
+        } else if (_userType == 'admin') {
+          docente = _docenteController.text;
         }
-      } else if (_userType == 'admin') {
-        docente = _docenteController.text;
-      }
         final solicitud = Solicitud(
           title: _titleController.text,
           course: _courseController.text,
@@ -109,6 +110,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
           endTime: _endSlot?.format(context),
           materials: _materials,
           userId: user.uid,
+          laboratorio: _selectedLaboratorio,
         );
         try {
           await _solicitudService.saveSolicitud(solicitud);
@@ -142,6 +144,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
       _endSlot = null;
       _materials.clear();
       _isConfirmed = false;
+      _selectedLaboratorio = null;
     });
   }
 
@@ -166,24 +169,14 @@ class _HomeDocenteState extends State<HomeDocente1> {
                   value!.isEmpty ? 'Ingrese el título de la práctica' : null,
             ),
             const SizedBox(height: 10),
-            CustomTextField(
-              controller: _courseController,
-              labelText: 'Nombre del Curso',
-              validator: (value) =>
-                  value!.isEmpty ? 'Ingrese el nombre del curso' : null,
-            ),
-            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
                   child: CustomTextField(
-                    controller: _studentCountController,
-                    labelText: 'N° Est',
-                    validator: (value) {
-                      _validateStudentCount(value!);
-                      return _isValidStudentCount ? null : 'Cantidad inválida';
-                    },
-                    keyboardType: TextInputType.number,
+                    controller: _courseController,
+                    labelText: 'Nombre del Curso',
+                    validator: (value) =>
+                        value!.isEmpty ? 'Ingrese el nombre del curso' : null,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -194,21 +187,61 @@ class _HomeDocenteState extends State<HomeDocente1> {
                       labelText: 'Docente',
                     ),
                   ),
-                if (_userType == 'admin') const SizedBox(width: 10),
-                DropdownButton<String>(
-                  value: _selectedTurn,
-                  items: ['Seleccionar Turno', 'Mañana', 'Tarde', 'Noche']
-                      .map((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedTurn = value!;
-                    });
-                  },
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                SizedBox(
+                  width: 100,
+                  child: CustomTextField(
+                    controller: _studentCountController,
+                    labelText: 'N° Est',
+                    validator: (value) {
+                      _validateStudentCount(value!);
+                      return _isValidStudentCount ? null : 'Inválido';
+                    },
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: _selectedTurn,
+                    items: ['Seleccionar Turno', 'Mañana', 'Tarde', 'Noche']
+                        .map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedTurn = value!;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: DropdownButton<String>(
+                    value: _selectedLaboratorio,
+                    hint: const Text('Seleccionar Laboratorio'),
+                    items: [
+                      'Química',
+                      'Física y biología',
+                    ].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedLaboratorio = value;
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
@@ -216,7 +249,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
             DateTimeSelector(
               solicitudService: _solicitudService,
               selectedTurn: _selectedTurn,
-              onTimeSlotSelected: (start, end) {
+              onTimeSlotSelected: (start, end, selectedLaboratorio) {
                 setState(() {
                   _startSlot = start;
                   _endSlot = end;
@@ -224,9 +257,11 @@ class _HomeDocenteState extends State<HomeDocente1> {
               },
               onDateSelected: (date) {
                 setState(() {
-                  _selectedDate = date; // Actualizar la fecha seleccionada
+                  _selectedDate = date;
                 });
               },
+              selectedLaboratorio: _selectedLaboratorio ??
+                  '', 
             ),
             const SizedBox(height: 20),
             MaterialsTable(

@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:intl/intl.dart';
+import 'package:laboratorio/data/models/material.dart';
 import 'package:laboratorio/data/models/solicitud_model.dart';
 import 'package:laboratorio/data/models/muestra_model.dart';
 
@@ -36,6 +37,7 @@ class SolicitudRepository {
             .toList(),
         'userId': solicitud.userId,
         'docente': solicitud.docente,
+        'laboratorio': solicitud.laboratorio,
       };
 
       await _solicitudesRef.push().set(solicitudJson);
@@ -104,37 +106,56 @@ class SolicitudRepository {
     return muestrass;
   }
 
-Future<List<Solicitud>> getSolicitudesByDate(DateTime? date) async {
-  if (date == null) return [];
-  final formattedDate = DateFormat('d/M/yyyy').format(date);
-  final snapshot = await FirebaseDatabase.instance
-      .ref()
-      .child('solicitudes')
-      .orderByChild('date')
-      .equalTo(formattedDate)
-      .get();
+  Future<List<Solicitud>> getSolicitudesByDateAndLaboratorio(
+      DateTime? date, String? laboratorio) async {
+    if (date == null || laboratorio == null) return [];
 
-  if (!snapshot.exists) {
+    final formattedDate = DateFormat('d/M/yyyy').format(date);
+    final snapshot = await FirebaseDatabase.instance
+        .ref()
+        .child('solicitudes')
+        .orderByChild('date')
+        .equalTo(formattedDate)
+        .get();
 
-    return [];
-  }
-  final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
-  
-  return data.entries.map((entry) {
-    try {
-      final solicitudData = Map<String, dynamic>.from(entry.value as Map);
-      return Solicitud(
-        date: solicitudData['date'], 
-        startTime: solicitudData['startTime'],
-        endTime: solicitudData['endTime'], 
-        title: '', course: '', studentCount: '', turn: '', materials: [], userId: '',
-       
-      );
-    } catch (e) {
-    
-      return null;
+    if (!snapshot.exists) {
+      return [];
     }
-  }).where((solicitud) => solicitud != null).cast<Solicitud>().toList();
-}
 
+    final Map<dynamic, dynamic> data = snapshot.value as Map<dynamic, dynamic>;
+
+    return data.entries
+        .map((entry) {
+          try {
+            final solicitudData = Map<String, dynamic>.from(entry.value as Map);
+            if (solicitudData['laboratorio'] == laboratorio) {
+              return Solicitud(
+                date: solicitudData['date'],
+                startTime: solicitudData['startTime'],
+                endTime: solicitudData['endTime'],
+                laboratorio: solicitudData['laboratorio'],
+                title: solicitudData['title'] ?? '',
+                course: solicitudData['course'] ?? '',
+                studentCount: solicitudData['studentCount'] ?? '',
+                turn: solicitudData['turn'] ?? '',
+                materials: solicitudData['materials'] != null
+                    ? List<LabMaterial>.from(solicitudData['materials'].map(
+                        (m) =>
+                            LabMaterial.fromMap(Map<String, dynamic>.from(m))))
+                    : [],
+                userId: solicitudData['userId'] ?? '',
+                docente: solicitudData['docente'] ?? '',
+              );
+            } else {
+              return null;
+            }
+          } catch (e) {
+            print('Error parsing solicitud: $e');
+            return null;
+          }
+        })
+        .where((solicitud) => solicitud != null)
+        .cast<Solicitud>()
+        .toList();
+  }
 }

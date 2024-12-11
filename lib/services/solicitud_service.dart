@@ -1,18 +1,14 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:laboratorio/data/models/solicitud_model.dart';
 import 'package:flutter/material.dart';
-import 'package:laboratorio/data/repositories/solicitud_repository.dart';
 
 class SolicitudService {
   final DatabaseReference _materialsRef =
       FirebaseDatabase.instance.ref().child('materiales');
-  final SolicitudRepository _solicitudRepository = SolicitudRepository();
   final DatabaseReference _solicitudesRef =
       FirebaseDatabase.instance.ref().child('solicitudes');
 
-  Future<List<Solicitud>> getSolicitudesByDate(DateTime date) async {
-    return await _solicitudRepository.getSolicitudesByDate(date);
-  }
+ 
 
   Future<void> saveSolicitud(Solicitud solicitud) async {
     try {

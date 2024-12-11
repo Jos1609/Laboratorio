@@ -4,9 +4,11 @@ import 'package:laboratorio/services/solicitud_service.dart';
 
 class DateTimeSelector extends StatefulWidget {
   final SolicitudService solicitudService;
-  final Function(TimeOfDay start, TimeOfDay end) onTimeSlotSelected;
+  final Function(TimeOfDay start, TimeOfDay end, String? selectedLaboratorio)
+      onTimeSlotSelected;
   final Function(DateTime?) onDateSelected;
   final String selectedTurn;
+  final String selectedLaboratorio;
 
   const DateTimeSelector({
     super.key,
@@ -14,6 +16,7 @@ class DateTimeSelector extends StatefulWidget {
     required this.onTimeSlotSelected,
     required this.onDateSelected,
     required this.selectedTurn,
+    required this.selectedLaboratorio,
   });
 
   @override
@@ -27,11 +30,13 @@ class _DateTimeSelectorState extends State<DateTimeSelector> {
   List<TimeOfDay> occupiedSlots = [];
   bool _isLoading = false;
   final SolicitudRepository _solicitudRepository = SolicitudRepository();
+  String? selectedLaboratorio;
 
   @override
   void initState() {
     super.initState();
     _initializeTimeSlots();
+    selectedLaboratorio = widget.selectedLaboratorio;
   }
 
   void _initializeTimeSlots() {
@@ -86,7 +91,7 @@ class _DateTimeSelectorState extends State<DateTimeSelector> {
     });
 
     if (selectedSlots.isNotEmpty) {
-      widget.onTimeSlotSelected(start, end);
+      widget.onTimeSlotSelected(start, end, widget.selectedLaboratorio);
     }
   }
 
@@ -128,11 +133,14 @@ class _DateTimeSelectorState extends State<DateTimeSelector> {
 
   Future<void> _loadOccupiedSlots(DateTime date) async {
     setState(() {
-      _isLoading = true; // Empieza a cargar
+      _isLoading = true;
     });
     try {
       final solicitudesExistentes =
-          await _solicitudRepository.getSolicitudesByDate(date);
+          await _solicitudRepository.getSolicitudesByDateAndLaboratorio(
+        date,
+        selectedLaboratorio, // Utilizar selectedLaboratorio del estado
+      );
       setState(() {
         occupiedSlots = solicitudesExistentes
             .map((solicitud) => _parseTimeOfDay(solicitud.startTime!))
@@ -142,8 +150,19 @@ class _DateTimeSelectorState extends State<DateTimeSelector> {
       print("Error al cargar los horarios ocupados: $e");
     } finally {
       setState(() {
-        _isLoading = false; // Termina de cargar
+        _isLoading = false;
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant DateTimeSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selectedLaboratorio != oldWidget.selectedLaboratorio) {
+      selectedLaboratorio = widget.selectedLaboratorio;
+      if (selectedDate != null) {
+        _loadOccupiedSlots(selectedDate!);
+      }
     }
   }
 
@@ -182,7 +201,8 @@ class _DateTimeSelectorState extends State<DateTimeSelector> {
               ? '${selectedDate!.day}/${selectedDate!.month}/${selectedDate!.year}'
               : 'Seleccione Fecha'),
         const SizedBox(height: 10),
-        if (slotsForTurn.isNotEmpty) // Mostrar solo si hay horarios
+        if (slotsForTurn.isNotEmpty &&
+            selectedDate != null) // Mostrar solo si hay horarios
           Wrap(
             spacing: 8.0,
             runSpacing: 4.0,
@@ -223,7 +243,8 @@ class _DateTimeSelectorState extends State<DateTimeSelector> {
             }).toList(),
           )
         else
-          const Text('Seleccione un turno para ver los horarios disponibles'),
+          const Text(
+              'Seleccione un turno y laboratorio para ver los horarios disponibles'),
       ],
     );
   }

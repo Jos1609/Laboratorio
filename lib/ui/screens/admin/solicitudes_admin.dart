@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:laboratorio/services/report_generator.dart';
 import 'package:laboratorio/ui/screens/docente/home.dart';
 import '../../../data/models/solicitud_model.dart';
 import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
@@ -22,6 +23,10 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
   DateTime? _startDate;
   DateTime? _endDate;
   List<Solicitud>? _cachedSolicitudes;
+  List<Map<String, dynamic>> solicitudesToMap(List<Solicitud> solicitudes) {
+    return solicitudes.map((solicitud) => solicitud.toMap()).toList();
+  }
+
   bool _isLoading = true;
 
   @override
@@ -164,7 +169,8 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
       bool matchesSearch = solicitud.title
               .toLowerCase()
               .contains(_searchQuery.toLowerCase()) ||
-          solicitud.course.toLowerCase().contains(_searchQuery.toLowerCase());
+          solicitud.course.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+          solicitud.docente!.toLowerCase().contains(_searchQuery.toLowerCase());
 
       bool matchesTurno =
           _selectedTurno == 'Turno' || solicitud.turn == _selectedTurno;
@@ -185,49 +191,68 @@ class _SolicitudesScreenState extends State<SolicitudesScreen> {
     }).toList();
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: GlobalNavigationBar(),
-    drawer: MediaQuery.of(context).size.width < 600
-        ? GlobalNavigationBar().buildCustomDrawer(context)
-        : null,
-    body: RefreshIndicator(
-      onRefresh: _loadSolicitudes,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: GlobalNavigationBar(),
+      drawer: MediaQuery.of(context).size.width < 600
+          ? GlobalNavigationBar().buildCustomDrawer(context)
+          : null,
+      body: RefreshIndicator(
+        onRefresh: _loadSolicitudes,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return constraints.maxWidth < 600
+                      ? _buildFiltersColumn()
+                      : _buildFiltersRow();
+                },
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _buildSolicitudesList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 16.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return constraints.maxWidth < 600
-                    ? _buildFiltersColumn()
-                    : _buildFiltersRow();
-              },
+            // Botón de exportar
+            FloatingActionButton.extended(
+              heroTag: 'export',
+              onPressed: () => _showExportDialog(context),
+              label: const Text('Exportar'),
+              icon: const Icon(Icons.file_download),
+              backgroundColor: Theme.of(context).colorScheme.onPrimary,
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _buildSolicitudesList(),
+            // Botón de crear solicitud
+            FloatingActionButton(
+              heroTag: 'create',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeDocente1()),
+                );
+              },
+              tooltip: 'Crear Solicitud',
+              child: const Icon(Icons.add),
             ),
           ],
         ),
       ),
-    ),
-    floatingActionButton: FloatingActionButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeDocente1()),
-        );
-      },
-      tooltip: 'Crear Solicitud',
-      child: const Icon(Icons.add),
-    ),
-  );
-}
-
+    );
+  }
 
   Widget _buildSolicitudesList() {
     if (_cachedSolicitudes == null) {
@@ -280,7 +305,7 @@ Widget build(BuildContext context) {
           flex: 2,
           child: TextField(
             decoration: InputDecoration(
-              hintText: 'Buscar por título o curso...',
+              hintText: 'Buscar por título, curso o docente ...',
               prefixIcon: const Icon(Icons.search),
               border:
                   OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
@@ -399,4 +424,39 @@ Widget build(BuildContext context) {
       ],
     );
   }
+
+  void _showExportDialog(BuildContext context) async {
+    if (_cachedSolicitudes == null || _cachedSolicitudes!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No hay solicitudes para exportar.')),
+      );
+      return;
+    }
+
+    final filteredSolicitudes = _filterSolicitudes(_cachedSolicitudes!);
+
+    if (filteredSolicitudes.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('No se encontraron solicitudes filtradas.')),
+      );
+      return;
+    }
+
+    try {
+      final solicitudesMap = solicitudesToMap(filteredSolicitudes);
+
+      // Llama a tu servicio para generar el reporte
+      await SolicitudesExporter.exportSolicitudes(solicitudesMap);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Reporte exportado exitosamente.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al exportar: $e')),
+      );
+    }
+  }
+
 }

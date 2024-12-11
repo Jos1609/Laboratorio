@@ -208,7 +208,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
                 Expanded(
                   child: DropdownButton<String>(
                     value: _selectedTurn,
-                    items: ['Selec.Turno', 'Mañana', 'Tarde', 'Noche']
+                    items: ['Seleccionar Turno', 'Mañana', 'Tarde', 'Noche']
                         .map((String value) {
                       return DropdownMenuItem<String>(
                         value: value,

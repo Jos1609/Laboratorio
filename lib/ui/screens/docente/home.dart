@@ -208,7 +208,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
                 Expanded(
                   child: DropdownButton<String>(
                     value: _selectedTurn,
-                    items: ['Seleccionar Turno', 'Mañana', 'Tarde', 'Noche']
+                    items: ['Selec.Turno', 'Mañana', 'Tarde', 'Noche']
                         .map((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
@@ -226,7 +226,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
                 Expanded(
                   child: DropdownButton<String>(
                     value: _selectedLaboratorio,
-                    hint: const Text('Seleccionar Laboratorio'),
+                    hint: const Text('Selec. Laboratorio'),
                     items: [
                       'Química',
                       'Física y biología',

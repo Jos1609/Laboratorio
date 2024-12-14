@@ -32,6 +32,7 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
       _buildNavButton(context, 'Solicitudes', '/solicitudes'),
       _buildNavButton(context, 'Incidencias', '/incidencias'),
       _buildNavButton(context, 'Muestras', '/muestrasadm'),
+      _buildNavButton(context, 'Agregar Usuario', '/super'),
       _buildNavButton(context, 'Perfil', '/profile'),
       
     ];
@@ -66,7 +67,8 @@ class GlobalNavigationBar extends StatelessWidget implements PreferredSizeWidget
           _buildDrawerItem(context, 'Materiales', '/home-admin'),
           _buildDrawerItem(context, 'Solicitudes', '/solicitudes'),
           _buildDrawerItem(context, 'Incidencias', '/incidencias'), 
-          _buildDrawerItem(context, 'Muestras', '/muestrasadm'),        
+          _buildDrawerItem(context, 'Muestras', '/muestrasadm'),     
+          _buildDrawerItem(context, 'Agregar Usuario', '/super'),     
           _buildDrawerItem(context, 'Perfil', '/profile'),
         ],
       ),

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:laboratorio/core/constants/app_colors.dart';
 import 'package:laboratorio/data/models/user.dart';
 import 'package:laboratorio/services/usuario_service.dart';
-import 'package:laboratorio/ui/screens/login/login_viewmodel.dart';
-import 'package:provider/provider.dart';
+import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
 
 class RegistroUsuarioScreen extends StatefulWidget {
   const RegistroUsuarioScreen({Key? key}) : super(key: key);
@@ -57,21 +55,10 @@ class _RegistroUsuarioScreenState extends State<RegistroUsuarioScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Panel'),
-        backgroundColor: AppColors.mainColor,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              // Llamar al método signOut del LoginViewModel
-              final loginViewModel =
-                  Provider.of<LoginViewModel>(context, listen: false);
-              loginViewModel.signOut(context);
-            },
-          ),
-        ],
-      ),
+      appBar: GlobalNavigationBar(),
+      drawer: MediaQuery.of(context).size.width < 600
+          ? GlobalNavigationBar().buildCustomDrawer(context)
+          : null,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(

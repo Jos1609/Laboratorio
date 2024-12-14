@@ -147,7 +147,7 @@ class MuestrasAdminView extends StatelessWidget {
                     }
 
                     final muestras = controller.filteredMuestras;
-                    
+
                     if (muestras.isEmpty) {
                       return const Center(
                         child: Text('No se encontraron muestras'),
@@ -167,14 +167,16 @@ class MuestrasAdminView extends StatelessWidget {
                           child: ListTile(
                             title: Text(
                               muestra.title,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
                             ),
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 const SizedBox(height: 4),
                                 Text('Curso: ${muestra.course}'),
-                                Text('Fecha: ${muestra.date ?? "No especificada"}'),
+                                Text(
+                                    'Fecha: ${muestra.date ?? "No especificada"}'),
                                 Text('Estado: ${muestra.estado}'),
                               ],
                             ),
@@ -192,6 +194,13 @@ class MuestrasAdminView extends StatelessWidget {
                                     ? Colors.orange.shade900
                                     : Colors.green.shade900,
                               ),
+                            ),
+                            leading: IconButton(
+                              icon: const Icon(Icons.swap_horiz),
+                              onPressed: muestra.estado == 'dejado'
+                                  ? () =>
+                                      controller.updateMuestraStatus(muestra)
+                                  : null,
                             ),
                           ),
                         );
@@ -239,11 +248,12 @@ class MuestrasAdminView extends StatelessWidget {
           // Botón Nueva Muestra
           FloatingActionButton.extended(
             onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MuestrasDocente()),
-                );
-              },
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => const MuestrasDocente()),
+              );
+            },
             icon: const Icon(Icons.add),
             label: const Text('Nueva Muestra'),
           ),

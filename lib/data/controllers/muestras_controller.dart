@@ -12,6 +12,7 @@ class MuestrasController extends ChangeNotifier {
   String get searchText => _searchText;
   String get selectedDateFilter => _selectedDateFilter;
   bool get isLoading => _isLoading;
+  final MuestraService _muestraService = MuestraService();
 
   MuestrasController() {
     _initializeData();
@@ -59,4 +60,9 @@ class MuestrasController extends ChangeNotifier {
       return matchesSearch && matchesDate;
     }).toList();
   }
+  Future<void> updateMuestraStatus(Muestra muestra) async {
+  muestra.estado = 'entregado';
+  await _muestraService.updateMuestraEstado(muestra.key!, muestra.estado, DateTime.now().toString());
+  notifyListeners();
+}
 }

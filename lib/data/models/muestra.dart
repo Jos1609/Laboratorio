@@ -7,7 +7,7 @@ class Muestra {
   final String? date;
   final String? dateR;
   final List<LabMaterial> muestras;
-  final String estado;
+  late final String estado;
   final String userId;
 
   Muestra({

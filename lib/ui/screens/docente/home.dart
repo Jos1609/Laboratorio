@@ -13,6 +13,7 @@ import 'package:laboratorio/ui/widgets/custom_textfield_docente.dart';
 import 'package:laboratorio/ui/widgets/date_time_selector.dart';
 import 'package:laboratorio/ui/widgets/materials_table.dart';
 import 'package:laboratorio/ui/widgets/navigation_drawer.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeDocente1 extends StatefulWidget {
   const HomeDocente1({super.key});
@@ -260,8 +261,7 @@ class _HomeDocenteState extends State<HomeDocente1> {
                   _selectedDate = date;
                 });
               },
-              selectedLaboratorio: _selectedLaboratorio ??
-                  '', 
+              selectedLaboratorio: _selectedLaboratorio ?? '',
             ),
             const SizedBox(height: 20),
             MaterialsTable(
@@ -272,6 +272,16 @@ class _HomeDocenteState extends State<HomeDocente1> {
                   _materials = updatedMaterials;
                 });
               },
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Redirigir al video tutorial
+                launchUrl(Uri.parse('https://drive.google.com/file/d/1yCqoNxMw9F04yF4ZRRgyxJD_xl-GBL71/view?usp=sharing'));
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              icon: const Icon(Icons.help_outline),
+              label: const Text('Ver tutorial'),
             ),
             const SizedBox(height: 20),
             _buildConfirmationBox(),
